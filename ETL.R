@@ -507,10 +507,5 @@ dataset_analise$distancia<- distancia
 dataset_analise$deslocamento<- ifelse(dataset_analise$distancia==0,0,1)
 
 
+saveRDS(dataset_analise,"dataset_analise.RDS")
 
-geosphere::distm(c(-5.08634, -42.80527), c(-15.7975, -47.8919), fun = distHaversine)
-
-geosphere::distm(c(-5.08634, -42.80527), c(-5.08634, -42.80527), fun = distHaversine)
-
-
-R
