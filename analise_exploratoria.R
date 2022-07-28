@@ -287,13 +287,169 @@ teste$stdres
 
 
 
+###########Ranking cidades: Valores absolutos
+
 dataset_analise %>%
   filter(deslocamento==1) %>%
-  group_by(munic_res) %>%
+  group_by(nome_nivel_hierarquia.x, mun_res_nome.x) %>%
   summarise(
     quantidade_deslocamentos = n()
   ) %>%
+  ungroup() %>%
   slice_max(order_by = quantidade_deslocamentos, n=20) %>%
-  mutate(munic_res = reorder(munic_res,quantidade_deslocamentos)) %>%
-  ggplot(aes(x=quantidade_deslocamentos, y=munic_res)) +
+  mutate(munic_res = reorder(mun_res_nome.x,quantidade_deslocamentos)) %>%
+  ggplot(aes(x=quantidade_deslocamentos, y=munic_res, fill= nome_nivel_hierarquia.x)) +
+  geom_col()
+
+
+dataset_analise %>%
+  filter(deslocamento==1) %>%
+  group_by(nome_nivel_hierarquia.y,mun_res_nome.y) %>%
+  summarise(
+    quantidade_deslocamentos = n()
+  ) %>%
+  ungroup() %>%
+  slice_max(order_by = quantidade_deslocamentos, n=20) %>%
+  mutate(munic_res = reorder(mun_res_nome.y,quantidade_deslocamentos)) %>%
+  ggplot(aes(x=quantidade_deslocamentos, y=munic_res,fill= nome_nivel_hierarquia.y )) +
+  geom_col()
+
+
+dataset_analise %>%
+  filter(deslocamento==0) %>%
+  group_by(nome_nivel_hierarquia.x, mun_res_nome.x) %>%
+  summarise(
+    quantidade_deslocamentos = n()
+  ) %>%
+  ungroup() %>%
+  slice_max(order_by = quantidade_deslocamentos, n=20) %>%
+  mutate(munic_res = reorder(mun_res_nome.x,quantidade_deslocamentos)) %>%
+  ggplot(aes(x=quantidade_deslocamentos, y=munic_res, fill= nome_nivel_hierarquia.x)) +
+  geom_col()
+
+
+###########Ranking cidades: Valores percentuais
+
+
+
+
+
+
+
+dados_agrupados<-
+  dataset_analise %>%
+  filter(deslocamento==1) %>%
+  mutate(municipio = mun_res_nome.x,
+         hierarquia = nome_nivel_hierarquia.x) %>%
+  select(municipio,
+         hierarquia) %>%
+  bind_rows(
+    dataset_analise %>%
+      filter(deslocamento==1) %>%
+      mutate(municipio = mun_res_nome.y,
+             hierarquia = nome_nivel_hierarquia.y) %>%
+      select(municipio,
+             hierarquia)
+      ,
+    dataset_analise %>%
+      filter(deslocamento==0) %>%
+      mutate(municipio = mun_res_nome.x,
+             hierarquia = nome_nivel_hierarquia.x)%>%
+      select(municipio,
+             hierarquia)) %>%
+  group_by(hierarquia, municipio) %>%
+  summarise(
+    quantidade_deslocamentos_total = n()
+  ) %>%
+  ungroup()
+
+
+dados_agrupados %>%
+  summarise(mean(quantidade_deslocamentos_total),
+            median(quantidade_deslocamentos_total))
+
+
+dados_agrupados %>%
+  ggplot() +
+  geom_density(aes(x=quantidade_deslocamentos_total)) +
+  scale_x_log10()
+
+dataset_analise %>%
+  filter(deslocamento==1) %>%
+  group_by(nome_nivel_hierarquia.x, munic_res, mun_res_nome.x) %>%
+  summarise(
+    quantidade_deslocamentos = n()
+  ) %>%
+  ungroup() %>%
+  inner_join(
+    dataset_analise %>%
+      group_by(nome_nivel_hierarquia.x, munic_res, mun_res_nome.x) %>%
+      summarise(
+        quantidade_deslocamentos_total = n()
+      ) %>%
+      ungroup()
+  ) %>%
+  mutate(percentual = (quantidade_deslocamentos/quantidade_deslocamentos_total)*100) %>%
+  arrange(desc(percentual), desc(quantidade_deslocamentos)) %>%
+  slice_head(n=40) %>%
+  #slice_max(order_by = percentual+quantidade_deslocamentos, n=40, ) %>%
+  mutate(munic_res = reorder(mun_res_nome.x,percentual)) %>%
+  ggplot(aes(x=percentual, y=munic_res, fill= nome_nivel_hierarquia.x)) +
+  geom_col()
+
+
+fab<-
+  dataset_analise %>%
+  filter(deslocamento==1) %>%
+  group_by(nome_nivel_hierarquia.y, cod_cidade.y, mun_res_nome.y) %>%
+  summarise(
+    quantidade_deslocamentos = n()
+  ) %>%
+  ungroup() %>%
+  inner_join(
+    dataset_analise %>%
+      group_by(nome_nivel_hierarquia.y, cod_cidade.y, mun_res_nome.y) %>%
+      summarise(
+        quantidade_deslocamentos_total = n()
+      ) %>%
+      ungroup()
+  ) %>%
+  mutate(percentual = (quantidade_deslocamentos/quantidade_deslocamentos_total)*100) %>%
+  arrange(desc(percentual), desc(quantidade_deslocamentos)) %>%
+  slice_head(n=40)
+
+
+dataset_analise %>%
+  filter(deslocamento==1) %>%
+  group_by(nome_nivel_hierarquia.y, cod_cidade.y, mun_res_nome.y) %>%
+  summarise(
+    quantidade_deslocamentos = n()
+  ) %>%
+  ungroup() %>%
+  inner_join(
+    dataset_analise %>%
+      group_by(nome_nivel_hierarquia.y, cod_cidade.y, mun_res_nome.y) %>%
+      summarise(
+        quantidade_deslocamentos_total = n()
+      ) %>%
+      ungroup()
+  ) %>%
+  mutate(percentual = (quantidade_deslocamentos/quantidade_deslocamentos_total)*100) %>%
+  arrange(desc(percentual), desc(quantidade_deslocamentos)) %>%
+  slice_head(n=40) %>%
+  mutate(munic_res = reorder(mun_res_nome.y,percentual)) %>%
+  ggplot(aes(x=percentual, y=munic_res,fill= nome_nivel_hierarquia.y )) +
+  geom_col()
+
+
+dataset_analise %>%
+  filter(deslocamento==0) %>%
+  group_by(nome_nivel_hierarquia.x, mun_res_nome.x) %>%
+  summarise(
+    quantidade_deslocamentos = n()
+  ) %>%
+  ungroup() %>%
+  slice_max(order_by = quantidade_deslocamentos, n=20) %>%
+  mutate(munic_res = reorder(mun_res_nome.x,quantidade_deslocamentos)) %>%
+  ggplot(aes(x=quantidade_deslocamentos, y=munic_res, fill= nome_nivel_hierarquia.x)) +
   geom_col()

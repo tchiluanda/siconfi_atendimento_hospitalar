@@ -435,7 +435,7 @@ cnes_trabalho<-
   dados_cnes %>%
   mutate(munResLat = as.numeric(munResLat),
          munResLon = as.numeric(munResLon)) %>%
-  select(CNES, CODUFMUN, munResLat, munResLon )
+  select(CNES, CODUFMUN, munResNome, munResLat, munResLon )
 
 cnes_trabalho <- janitor::clean_names(cnes_trabalho)
 
@@ -448,11 +448,12 @@ sih_trabalho<-
   sample_sih %>%
   mutate(munResLat = as.numeric(munResLat),
          munResLon = as.numeric(munResLon)) %>%
-  select(CNES, MUNIC_RES, munResLat, munResLon)
+  select(CNES, MUNIC_RES, munResNome, munResLat, munResLon)
 
 sih_trabalho <- janitor::clean_names(sih_trabalho)
 
 ###Montagem do dataset único
+dataset_analise_old<- dataset_analise
 
 dataset_analise <-
 
