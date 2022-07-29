@@ -441,7 +441,7 @@ cnes_trabalho <- janitor::clean_names(cnes_trabalho)
 
 gastos_trabalho<-
   gastos_hospitais_pc %>%
-  select(id_municipio, perc)
+  select(id_municipio, perc, populacao, gasto_pc)
 
 
 sih_trabalho<-
@@ -474,7 +474,7 @@ sih_trabalho %>%
   inner_join(
     gastos_trabalho %>%
       mutate(codufmun= str_sub(id_municipio,1,6) ) %>%
-      select(codufmun, perc),
+      select(codufmun, perc, populacao, gasto_pc),
     by= "codufmun"
   ) %>%
   inner_join(
@@ -506,6 +506,7 @@ distancia<- dataset_analise$distancia/1000
 dataset_analise$distancia<- distancia
 
 dataset_analise$deslocamento<- ifelse(dataset_analise$distancia==0,0,1)
+
 
 
 saveRDS(dataset_analise,"dataset_analise.RDS")
