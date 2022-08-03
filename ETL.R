@@ -511,3 +511,36 @@ dataset_analise$deslocamento<- ifelse(dataset_analise$distancia==0,0,1)
 
 saveRDS(dataset_analise,"dataset_analise.RDS")
 
+####Prepara dados auxiliares para etl
+
+REGIC2018_Cidades <- read_excel("REGIC2018_Cidades_v2.xlsx")
+
+REGIC2018_Cidades <- janitor::clean_names(REGIC2018_Cidades)
+
+REGIC_trabalho<-
+  REGIC2018_Cidades %>%
+  select(1:3,13,14)
+
+names(REGIC_trabalho)[4:5]<- c("nivel_hierarquia","nome_nivel_hierarquia")
+
+municipios_seat<- geobr::read_municipal_seat(showProgress = FALSE)
+municipios<- geobr::read_municipality(showProgress = FALSE)
+
+estados<- geobr::read_state(showProgress = FALSE)
+
+brasil<- geobr::read_country(showProgress = FALSE)
+
+siconfiBD::setup_siconfi(project_id = "nice-diorama-306223")
+
+
+#Busca de dados de população de municípios
+pop_municipios <- bdplyr("br_ibge_populacao.municipio")
+
+pop_municipios <-
+  pop_municipios%>%
+  filter(ano==2020)%>%
+  bd_collect()
+
+
+save(list=c("REGIC_trabalho","municipios_seat","municipios","estados","brasil","pop_municipios"), file = "dados_auxiliares.RData")
+

@@ -1,0 +1,187 @@
+---
+title: "Internações hospitalares e deslocamentos"
+author: "Fernando Barbalho"
+format: 
+  html:
+    code-fold: true
+editor: visual
+execute:
+  warning: false
+  message: false
+---
+
+```{r setup}
+library(tidyverse)
+library(geobr)
+library(readxl)
+library(basedosdados)
+library(viridis)
+library(sf)
+library(ggrepel)
+library(colorspace)
+
+dataset_analise <- readRDS("~/Github/siconfi_atendimento_hospitalar/dataset_analise.RDS")
+
+load("~/Github/siconfi_atendimento_hospitalar/dados_auxiliares.RData")
+
+
+```
+
+## Quarto
+
+```{r fig.width=4.5, fig.height=2.25, fig.align='left'}
+
+#Quantidade de atendimento total por tipo de deslocamento
+dataset_analise %>%
+  #mutate(y= )
+  ggplot() +
+  geom_bar(aes(y=factor(deslocamento,  labels= c("Sem deslocamento","Com deslocamento"))), fill= "white")+
+  theme_light() +
+  scale_x_continuous(labels = function(x){format(x,big.mark = ".",decimal.mark = ",", scientific =FALSE)} )+
+  theme(
+    panel.background = element_rect(fill = "#15202B"),
+    panel.grid = element_blank(),
+    axis.title.x = element_blank(),
+    axis.title.y = element_blank(),
+    #axis.text = element_blank()
+  )
+
+
+```
+
+```{r fig.width=20, fig.height=10, fig.dpi=300}
+#mapa dos municípios brasileiros por nível hierárquico do REGIC
+
+pop_municipios$pop_cut<- cut(pop_municipios$populacao, 
+                             breaks = c(0,
+                                        2000,
+                                        5000,
+                                        10000,
+                                        20000,
+                                        50000,
+                                        100000,
+                                        500000,
+                                        max(pop_municipios$populacao)), 
+                             labels= c("0-2.000",
+                                       "2.001-5.000",
+                                       "5.000-10.000",
+                                       "10.001-20.000",
+                                       "20.001-50.000",
+                                       "50.001-100.000",
+                                       "100.001-500.000",
+                                       ">500.000"))
+
+
+REGIC_trabalho$nome_nivel_hierarquia_ordenado<-
+factor(REGIC_trabalho$nome_nivel_hierarquia, levels = unique(REGIC_trabalho$nome_nivel_hierarquia[order(REGIC_trabalho$nivel_hierarquia)]))
+
+municipios_seat<- cbind(municipios_seat, st_coordinates(st_centroid(municipios_seat)))
+
+
+mun_sel_nivel_1A<- 
+  municipios_seat %>%
+  inner_join(
+    REGIC_trabalho%>%
+      filter(nivel_hierarquia=="1A")%>%
+      mutate(code_muni = cod_cidade))
+
+mun_sel_nivel_1B<- 
+  municipios_seat %>%
+  inner_join(
+    REGIC_trabalho%>%
+      filter(nivel_hierarquia=="1B")%>%
+      mutate(code_muni = cod_cidade))
+
+
+mun_sel_nivel_1C<- 
+  municipios_seat %>%
+  inner_join(
+    REGIC_trabalho%>%
+      filter(nivel_hierarquia=="1C")%>%
+      mutate(code_muni = cod_cidade))
+  
+
+mun_sel_nivel_2A<- 
+  municipios_seat %>%
+  inner_join(
+    REGIC_trabalho%>%
+      filter(nivel_hierarquia=="2A")%>%
+      mutate(code_muni = cod_cidade))
+
+
+
+municipios_seat %>%
+  inner_join(
+    REGIC_trabalho %>%
+      mutate(code_muni = cod_cidade))%>%
+  inner_join(
+        pop_municipios %>%
+      mutate(code_muni = as.numeric(id_municipio))
+  ) %>%
+  ggplot()+
+  geom_sf(data = estados, fill=NA, color="#808080")+
+  geom_sf(aes( fill= pop_cut),pch=21, color="#444444", size=1)+
+  geom_text_repel(data = mun_sel_nivel_1A,aes(x=X, y=Y, label= name_muni),fontface = "bold", color="white")+
+  geom_text_repel(data = mun_sel_nivel_1B,aes(x=X, y=Y, label= name_muni),fontface = "bold", color="white")+
+  geom_text_repel(data = mun_sel_nivel_1C,aes(x=X, y=Y, label= name_muni),fontface = "bold", color="white")+
+  geom_text_repel(data = mun_sel_nivel_2A,aes(x=X, y=Y, label= name_muni),fontface = "bold", color="white", force =2)+
+  scale_fill_viridis(discrete = TRUE)+
+  labs(
+    fill= str_wrap("População (nº de habitantes)",20) 
+  )+
+  theme_light() +
+  theme(
+    text = element_text(size=20),
+    panel.background = element_rect(fill = "#15202B"),
+    panel.grid = element_blank(),
+    axis.title.x = element_blank(),
+    axis.title.y = element_blank(),
+    strip.background = element_rect(fill = "#505050"),
+    strip.text = element_text(color = "white"),
+    axis.text = element_blank(),
+    legend.key = element_rect(fill = "#15202B")
+    
+  )+
+  facet_wrap(nome_nivel_hierarquia_ordenado~.)
+
+```
+
+```{r}
+#Distribuição de quantidade de internações com facets por tipo de deslocamento e ranking por nível hirárquico
+dataset_analise %>%
+  mutate(deslocamento = as.factor(deslocamento)) %>%
+  group_by(deslocamento,nome_nivel_hierarquia.x) %>%
+  summarise(
+    quantidade_internacoes =n()
+  )%>%
+  mutate(tipo_deslocamento = ifelse(deslocamento=="0","local","saída")) %>%
+  mutate(nome_nivel_hierarquia = reorder(nome_nivel_hierarquia.x, quantidade_internacoes)) %>%
+  ungroup() %>%
+  bind_rows(
+    dataset_analise %>%
+      filter(deslocamento == 1) %>%
+      mutate(deslocamento = as.factor(deslocamento)) %>%
+      group_by(deslocamento,nome_nivel_hierarquia.y) %>%
+      summarise(
+        quantidade_internacoes =n()
+      )%>%
+      mutate(tipo_deslocamento = "chegada") %>%
+      mutate(nome_nivel_hierarquia= reorder(nome_nivel_hierarquia.y, quantidade_internacoes)) %>%
+      ungroup()
+  ) %>%
+  ggplot() +
+  scale_fill_discrete_qualitative(palette = "Dark 3")+ 
+  geom_col(aes(x=quantidade_internacoes, y=nome_nivel_hierarquia, fill=tipo_deslocamento), position="fill")+
+  theme_light() +
+  theme(
+    panel.background = element_rect(fill = "#15202B"),
+    panel.grid = element_blank(),
+    axis.title.x = element_blank(),
+    axis.title.y = element_blank(),
+    #axis.text = element_blank()
+  )
+
+
+
+```
+

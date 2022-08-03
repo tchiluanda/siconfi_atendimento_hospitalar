@@ -1,4 +1,20 @@
-load("dataset_analise.RDS")
+#Anotações da conversa com Beatriz Jardim
+# rede de atenção primária: UBS referência dos pacientes para os hospitais (atendimento de custo muito baixo)
+# perfil de atendimento
+#
+# SIA (vem coisas do UBS)
+# SIH (internação hospitalar) autorização de internação hospitalar
+# ver por habilitação
+#
+# CNES verificar
+#
+# Verificar por especialização (inclusive por doença específica. ex: colo do útero)
+#
+# região de saúde
+
+
+
+dataset_analise <- readRDS("~/Github/siconfi_atendimento_hospitalar/dataset_analise.RDS")
 
 #Quantidade de atendimento total por tipo de deslocamento
 dataset_analise %>%
@@ -67,7 +83,7 @@ dataset_analise %>%
       mutate(nome_nivel_hierarquia= reorder(nome_nivel_hierarquia.y, quantidade_internacoes)) %>%
       ungroup()
   ) %>%
-  ggplot(aes(x=quantidade_internacoes, y=nome_nivel_hierarquia)) +
+  ggplot(aes(x=quantidade_internacoes, y=nome_nivel_hierarquia, fill=tipo_deslocamento)) +
   geom_col()+
   facet_wrap(tipo_deslocamento~.)
 
@@ -335,24 +351,30 @@ dados_agrupados<-
   dataset_analise %>%
   filter(deslocamento==1) %>%
   mutate(municipio = mun_res_nome.x,
-         hierarquia = nome_nivel_hierarquia.x) %>%
-  select(municipio,
+         hierarquia = nome_nivel_hierarquia.x,
+         id_municipio = munic_res) %>%
+  select(id_municipio,
+         municipio,
          hierarquia) %>%
   bind_rows(
     dataset_analise %>%
       filter(deslocamento==1) %>%
       mutate(municipio = mun_res_nome.y,
-             hierarquia = nome_nivel_hierarquia.y) %>%
-      select(municipio,
+             hierarquia = nome_nivel_hierarquia.y,
+             id_municipio = codufmun) %>%
+      select(id_municipio,
+             municipio,
              hierarquia)
       ,
     dataset_analise %>%
       filter(deslocamento==0) %>%
       mutate(municipio = mun_res_nome.x,
-             hierarquia = nome_nivel_hierarquia.x)%>%
-      select(municipio,
+             hierarquia = nome_nivel_hierarquia.x,
+             id_municipio = munic_res)%>%
+      select(id_municipio,
+             municipio,
              hierarquia)) %>%
-  group_by(hierarquia, municipio) %>%
+  group_by(id_municipio,hierarquia, municipio) %>%
   summarise(
     quantidade_deslocamentos_total = n()
   ) %>%
@@ -371,86 +393,67 @@ dados_agrupados %>%
 
 ###########Ranking cidades: Valores normalizados
 
-
 dataset_analise %>%
   filter(deslocamento==1) %>%
+  mutate(id_municipio = munic_res) %>%
   #filter(perc.x>0) %>%
-  group_by(nome_nivel_hierarquia.x, mun_res_nome.x) %>%
+  group_by(id_municipio, nome_nivel_hierarquia.x, mun_res_nome.x) %>%
   summarise(
-    quantidade_deslocamentos_p_habitante = median(distancia)
-  ) %>%
-  ungroup() %>%
-  slice_max(order_by = quantidade_deslocamentos_p_habitante, n=20) %>%
-  mutate(munic_res = reorder(mun_res_nome.x,quantidade_deslocamentos_p_habitante)) %>%
-  ggplot(aes(x=quantidade_deslocamentos_p_habitante, y=munic_res, fill= nome_nivel_hierarquia.x)) +
-  geom_col()
-
-
-fab<-
-  dataset_analise %>%
-  filter(deslocamento==1) %>%
-  filter(perc.x>0) %>%
-  group_by(nome_nivel_hierarquia.x,mun_res_nome.x) %>%
-  summarise(
-    quantidade_deslocamentos_p_habitante = median(distancia)
-  ) %>%
-  ungroup() %>%
-  slice_max(order_by = quantidade_deslocamentos_p_habitante, n=20) %>%
-  inner_join(
-    dataset_analise %>%
-      filter(deslocamento==1) %>%
-      filter(perc.x>0) %>%
-      group_by(nome_nivel_hierarquia.x,mun_res_nome.x) %>%
-      summarise(
-        quantidade_deslocamentos = n(),
-        distancia_mediana = median(distancia)
-      ) %>%
-      ungroup() )
-
-dataset_analise %>%
-  filter(deslocamento==1) %>%
-  #filter(perc.y >0) %>%
-  group_by(nome_nivel_hierarquia.y,mun_res_nome.y) %>%
-  summarise(
-    quantidade_deslocamentos_p_habitante = n_distinct(mun_res_nome.x)
-  ) %>%
-  ungroup() %>%
-  slice_max(order_by = quantidade_deslocamentos_p_habitante, n=20) %>%
-  mutate(munic_res = reorder(mun_res_nome.y,quantidade_deslocamentos_p_habitante)) %>%
-  ggplot(aes(x=quantidade_deslocamentos_p_habitante, y=munic_res,fill= nome_nivel_hierarquia.y )) +
-  geom_col()
-
-fab<-
-  dataset_analise %>%
-  filter(deslocamento==1) %>%
-  filter(perc.y>0) %>%
-  group_by(nome_nivel_hierarquia.y,mun_res_nome.y) %>%
-  summarise(
-    quantidade_deslocamentos_p_habitante = n_distinct(mun_res_nome.x)
-  ) %>%
-  ungroup() %>%
-  slice_max(order_by = quantidade_deslocamentos_p_habitante, n=20) %>%
-  inner_join(
-    dataset_analise %>%
-      filter(deslocamento==1) %>%
-      filter(perc.y>0) %>%
-      group_by(nome_nivel_hierarquia.y,mun_res_nome.y) %>%
-      summarise(
-        quantidade_deslocamentos = n_distinct(mun_res_nome.x),
-        #populacao = min(populacao.y)
-      ) %>%
-      ungroup() )
-
-
-
-dataset_analise %>%
-  filter(deslocamento==0) %>%
-  group_by(nome_nivel_hierarquia.x, mun_res_nome.x) %>%
-  summarise(
+    mediana_distancia_percorrida = median(distancia),
     quantidade_deslocamentos = n()
   ) %>%
   ungroup() %>%
-  slice_max(order_by = quantidade_deslocamentos, n=20) %>%
-  mutate(munic_res = reorder(mun_res_nome.x,quantidade_deslocamentos)) %>%
-  ggplot(aes(x=quantidade_deslocamentos, y=munic_res, fill= nome_nivel_hierarquia.x)) +
+  inner_join(dados_agrupados) %>%
+  mutate(mediana_distancia_padronizada =  mediana_distancia_percorrida * quantidade_deslocamentos/ quantidade_deslocamentos_total) %>%
+  slice_max(order_by = mediana_distancia_padronizada, n=20) %>%
+  mutate(munic_res = reorder(mun_res_nome.x,mediana_distancia_padronizada)) %>%
+  ggplot(aes(x=mediana_distancia_padronizada, y=munic_res, fill= nome_nivel_hierarquia.x)) +
   geom_col()
+
+
+dataset_trabalho_graf_mediana<-
+  dataset_analise %>%
+  filter(deslocamento==1) %>%
+  mutate(id_municipio = munic_res) %>%
+  #filter(perc.x>0) %>%
+  group_by(id_municipio, nome_nivel_hierarquia.x, mun_res_nome.x) %>%
+  summarise(
+    mediana_distancia_percorrida = median(distancia),
+    quantidade_deslocamentos = n()
+  ) %>%
+  ungroup() %>%
+  inner_join(dados_agrupados) %>%
+  mutate(mediana_distancia_padronizada =  mediana_distancia_percorrida * quantidade_deslocamentos/ quantidade_deslocamentos_total)
+
+dataset_analise %>%
+  filter(deslocamento==1) %>%
+  mutate(id_municipio = codufmun) %>%
+  #filter(perc.y >0) %>%
+  group_by(id_municipio,nome_nivel_hierarquia.y,mun_res_nome.y) %>%
+  summarise(
+    municipios_atendidos = n_distinct(mun_res_nome.x),
+    quantidade_deslocamentos = n()
+  ) %>%
+  ungroup() %>%
+  inner_join(dados_agrupados) %>%
+  mutate(municipios_atendidos_padronizado =  municipios_atendidos * quantidade_deslocamentos/ quantidade_deslocamentos_total) %>%
+  slice_max(order_by = municipios_atendidos_padronizado, n=20) %>%
+  mutate(munic_res = reorder(mun_res_nome.y,municipios_atendidos_padronizado)) %>%
+  ggplot(aes(x=municipios_atendidos, y=munic_res,fill= nome_nivel_hierarquia.y )) +
+  geom_col()
+
+dataset_trabalho_graf_atracao<-
+  dataset_analise %>%
+  filter(deslocamento==1) %>%
+  mutate(id_municipio = codufmun) %>%
+  #filter(perc.y >0) %>%
+  group_by(id_municipio,nome_nivel_hierarquia.y,mun_res_nome.y) %>%
+  summarise(
+    municipios_atendidos = n_distinct(mun_res_nome.x),
+    quantidade_deslocamentos = n()
+  ) %>%
+  ungroup() %>%
+  inner_join(dados_agrupados) %>%
+  mutate(municipios_atendidos_padronizado =  municipios_atendidos * quantidade_deslocamentos/ quantidade_deslocamentos_total)
+
+
