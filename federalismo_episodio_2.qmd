@@ -24,60 +24,6 @@ dataset_analise <- readRDS("~/Github/siconfi_atendimento_hospitalar/dataset_anal
 
 load("~/Github/siconfi_atendimento_hospitalar/dados_auxiliares.RData")
 
-
-```
-
-## Quarto
-
-```{r fig.width=4.5, fig.height=2.25, fig.align='left'}
-
-#Quantidade de atendimento total por tipo de deslocamento
-dataset_analise %>%
-  #mutate(y= )
-  ggplot() +
-  geom_bar(aes(y=factor(deslocamento,  labels= c("Sem deslocamento","Com deslocamento"))), fill= "white")+
-  theme_light() +
-  scale_x_continuous(labels = function(x){format(x,big.mark = ".",decimal.mark = ",", scientific =FALSE)} )+
-  theme(
-    panel.background = element_rect(fill = "#15202B"),
-    panel.grid = element_blank(),
-    axis.title.x = element_blank(),
-    axis.title.y = element_blank(),
-    #axis.text = element_blank()
-  )
-
-
-```
-
-```{r fig.width=20, fig.height=10, fig.dpi=300}
-#mapa dos municípios brasileiros por nível hierárquico do REGIC
-
-pop_municipios$pop_cut<- cut(pop_municipios$populacao, 
-                             breaks = c(0,
-                                        2000,
-                                        5000,
-                                        10000,
-                                        20000,
-                                        50000,
-                                        100000,
-                                        500000,
-                                        max(pop_municipios$populacao)), 
-                             labels= c("0-2.000",
-                                       "2.001-5.000",
-                                       "5.000-10.000",
-                                       "10.001-20.000",
-                                       "20.001-50.000",
-                                       "50.001-100.000",
-                                       "100.001-500.000",
-                                       ">500.000"))
-
-
-REGIC_trabalho$nome_nivel_hierarquia_ordenado<-
-factor(REGIC_trabalho$nome_nivel_hierarquia, levels = unique(REGIC_trabalho$nome_nivel_hierarquia[order(REGIC_trabalho$nivel_hierarquia)]))
-
-municipios_seat<- cbind(municipios_seat, st_coordinates(st_centroid(municipios_seat)))
-
-
 mun_sel_nivel_1A<- 
   municipios_seat %>%
   inner_join(
@@ -110,6 +56,175 @@ mun_sel_nivel_2A<-
 
 
 
+```
+
+## Quarto
+
+```{r fig.width=4, fig.height=2, fig.align='left'}
+
+#Quantidade de atendimento total por tipo de deslocamento
+dataset_analise %>%
+  ggplot() +
+  geom_bar(aes(y=factor(deslocamento,  labels= c("Local","Com deslocamento"))), fill= "white")+
+  theme_light() +
+  scale_x_continuous(labels = function(x){format(x,big.mark = ".",decimal.mark = ",", scientific =FALSE)} )+
+  theme(
+    panel.background = element_rect(fill = "#15202B"),
+    panel.grid = element_blank(),
+    axis.title.y = element_blank(),
+    axis.text.x = element_text(hjust = 0.7)
+  ) +
+  labs(
+    x= "Número de internações"
+  )
+
+
+```
+
+```{r fig.width=8, fig.height=4}
+g1<-
+dataset_analise %>%
+  filter(deslocamento==1) %>%
+  group_by(nome_nivel_hierarquia.x, mun_res_nome.x) %>%
+  summarise(
+    quantidade_deslocamentos = n()
+  ) %>%
+  ungroup() %>%
+  slice_max(order_by = quantidade_deslocamentos, n=20) %>%
+  mutate(munic_res = reorder(mun_res_nome.x,quantidade_deslocamentos)) %>%
+  ggplot(aes(x=quantidade_deslocamentos, y=munic_res)) +
+  geom_col(fill="white") +
+  theme(
+    panel.background = element_rect(fill = "#15202B"),
+    panel.grid = element_blank(),
+    axis.title.y = element_blank(),
+    axis.text.x = element_text(angle = 90),
+    axis.title.x = element_text(hjust = 0.7)
+  ) +
+  labs(
+    x= "Nº de internações",
+    title = "Saída"
+  )
+
+g2<-
+dataset_analise %>%
+  filter(deslocamento==1) %>%
+  group_by(nome_nivel_hierarquia.y,mun_res_nome.y) %>%
+  summarise(
+    quantidade_deslocamentos = n()
+  ) %>%
+  ungroup() %>%
+  slice_max(order_by = quantidade_deslocamentos, n=20) %>%
+  mutate(munic_res = reorder(mun_res_nome.y,quantidade_deslocamentos)) %>%
+  ggplot(aes(x=quantidade_deslocamentos, y=munic_res )) +
+  geom_col(fill = "white")+
+  theme(
+    panel.background = element_rect(fill = "#15202B"),
+    panel.grid = element_blank(),
+    axis.title.y = element_blank(),
+    axis.text.x = element_text(angle = 90),
+    axis.title.x = element_text(hjust = 0.7)
+  ) +
+  labs(
+    x= "Nº de internações",
+    title = "Entrada"
+  )
+
+g3<-
+dataset_analise %>%
+  filter(deslocamento==0) %>%
+  group_by(nome_nivel_hierarquia.x, mun_res_nome.x) %>%
+  summarise(
+    quantidade_deslocamentos = n()
+  ) %>%
+  ungroup() %>%
+  slice_max(order_by = quantidade_deslocamentos, n=20) %>%
+  mutate(munic_res = reorder(mun_res_nome.x,quantidade_deslocamentos)) %>%
+  ggplot(aes(x=quantidade_deslocamentos, y=munic_res)) +
+  geom_col()+
+  geom_col(fill = "white")+
+  theme(
+    panel.background = element_rect(fill = "#15202B"),
+    panel.grid = element_blank(),
+    axis.title.y = element_blank(),
+    axis.text.x = element_text(angle = 90)
+  ) +
+  labs(
+    x= "Nº de internações",
+    title = "Local"
+  )
+
+cowplot::ggdraw()+
+  cowplot::draw_plot(g1,0, 0, .3, 1)+
+  cowplot::draw_plot(g2,.3, 0, .3, 1)+
+  cowplot::draw_plot(g3,.6, 0, .3, 1)
+
+
+```
+
+
+
+```{r fig.width=20, fig.height=10, fig.dpi=300}
+#mapa dos municípios brasileiros por nível hierárquico do REGIC
+
+pop_municipios$pop_cut<- cut(pop_municipios$populacao, 
+                             breaks = c(0,
+                                        2000,
+                                        5000,
+                                        10000,
+                                        20000,
+                                        50000,
+                                        100000,
+                                        500000,
+                                        max(pop_municipios$populacao)), 
+                             labels= c("0-2.000",
+                                       "2.001-5.000",
+                                       "5.000-10.000",
+                                       "10.001-20.000",
+                                       "20.001-50.000",
+                                       "50.001-100.000",
+                                       "100.001-500.000",
+                                       ">500.000"))
+
+
+REGIC_trabalho$nome_nivel_hierarquia_ordenado<-
+factor(REGIC_trabalho$nome_nivel_hierarquia, levels = unique(REGIC_trabalho$nome_nivel_hierarquia[order(REGIC_trabalho$nivel_hierarquia)]))
+
+municipios_seat<- cbind(municipios_seat, st_coordinates(st_centroid(municipios_seat)))
+
+
+# mun_sel_nivel_1A<- 
+#   municipios_seat %>%
+#   inner_join(
+#     REGIC_trabalho%>%
+#       filter(nivel_hierarquia=="1A")%>%
+#       mutate(code_muni = cod_cidade))
+# 
+# mun_sel_nivel_1B<- 
+#   municipios_seat %>%
+#   inner_join(
+#     REGIC_trabalho%>%
+#       filter(nivel_hierarquia=="1B")%>%
+#       mutate(code_muni = cod_cidade))
+# 
+# 
+# mun_sel_nivel_1C<- 
+#   municipios_seat %>%
+#   inner_join(
+#     REGIC_trabalho%>%
+#       filter(nivel_hierarquia=="1C")%>%
+#       mutate(code_muni = cod_cidade))
+#   
+# 
+# mun_sel_nivel_2A<- 
+#   municipios_seat %>%
+#   inner_join(
+#     REGIC_trabalho%>%
+#       filter(nivel_hierarquia=="2A")%>%
+#       mutate(code_muni = cod_cidade))
+
+
+
 municipios_seat %>%
   inner_join(
     REGIC_trabalho %>%
@@ -120,7 +235,7 @@ municipios_seat %>%
   ) %>%
   ggplot()+
   geom_sf(data = estados, fill=NA, color="#808080")+
-  geom_sf(aes( fill= pop_cut),pch=21, color="#444444", size=1)+
+  geom_sf(aes( fill= pop_cut),pch=21, color="#444444", size=2.9)+
   geom_text_repel(data = mun_sel_nivel_1A,aes(x=X, y=Y, label= name_muni),fontface = "bold", color="white")+
   geom_text_repel(data = mun_sel_nivel_1B,aes(x=X, y=Y, label= name_muni),fontface = "bold", color="white")+
   geom_text_repel(data = mun_sel_nivel_1C,aes(x=X, y=Y, label= name_muni),fontface = "bold", color="white")+
@@ -146,9 +261,45 @@ municipios_seat %>%
 
 ```
 
-```{r}
-#Distribuição de quantidade de internações com facets por tipo de deslocamento e ranking por nível hirárquico
-dataset_analise %>%
+```{r fig.width=8, fig.height=4}
+
+#Distribuição de quantidade de internações distribuição de tipos de internação por regic 
+g1<-dataset_analise %>%
+  mutate(deslocamento = as.factor(deslocamento)) %>%
+  group_by(deslocamento,nome_nivel_hierarquia.x) %>%
+  summarise(
+    quantidade_internacoes =n()
+  )%>%
+  mutate(tipo_deslocamento = ifelse(deslocamento=="0","local","saída")) %>%
+  mutate(nome_nivel_hierarquia = reorder(nome_nivel_hierarquia.x, quantidade_internacoes)) %>%
+  ungroup() %>%
+  bind_rows(
+    dataset_analise %>%
+      filter(deslocamento == 1) %>%
+      mutate(deslocamento = as.factor(deslocamento)) %>%
+      group_by(deslocamento,nome_nivel_hierarquia.y) %>%
+      summarise(
+        quantidade_internacoes =n()
+      )%>%
+      mutate(tipo_deslocamento = "entrada") %>%
+      mutate(nome_nivel_hierarquia= reorder(nome_nivel_hierarquia.y, quantidade_internacoes)) %>%
+      ungroup()
+  ) %>%
+  ggplot() +
+  #scale_fill_discrete_qualitative(palette = "Dark 3")+ 
+  geom_col(aes(x=quantidade_internacoes, y=fct_reorder(nome_nivel_hierarquia, quantidade_internacoes,sum)),fill="white")+
+  scale_x_continuous(labels = function(x){format(x,big.mark = ".",decimal.mark = ",", scientific =FALSE)} )+
+  theme_light() +
+  theme(
+    panel.background = element_rect(fill = "#15202B"),
+    panel.grid = element_blank(),
+    axis.title.x = element_blank(),
+    axis.title.y = element_blank(),
+  )
+
+
+#Distribuição de quantidade de internações distribuição de tipos de internação por regic 
+g2<-dataset_analise %>%
   mutate(deslocamento = as.factor(deslocamento)) %>%
   group_by(deslocamento,nome_nivel_hierarquia.x) %>%
   summarise(
@@ -171,17 +322,140 @@ dataset_analise %>%
   ) %>%
   ggplot() +
   scale_fill_discrete_qualitative(palette = "Dark 3")+ 
-  geom_col(aes(x=quantidade_internacoes, y=nome_nivel_hierarquia, fill=tipo_deslocamento), position="fill")+
+  geom_col(aes(x=quantidade_internacoes, y=fct_reorder(nome_nivel_hierarquia, quantidade_internacoes,sum), fill=tipo_deslocamento), position="fill")+
   theme_light() +
   theme(
     panel.background = element_rect(fill = "#15202B"),
     panel.grid = element_blank(),
     axis.title.x = element_blank(),
     axis.title.y = element_blank(),
-    #axis.text = element_blank()
+    legend.title = element_blank()
+  ) 
+
+cowplot::ggdraw()+
+  cowplot::draw_plot(g1,0, 0, .5, 1)+
+  cowplot::draw_plot(g2,.5, 0, .5, 1)
+
+```
+
+```{r fig.width=20, fig.height=10, fig.dpi=300}
+
+
+agrupamento_municipio<-
+    dataset_analise %>%
+      filter(
+             deslocamento ==1) %>%
+      group_by(munic_res) %>%
+      summarise(
+        numero_internacoes = n()
+      ) %>%
+      mutate(code_muni = munic_res,
+             tipo_deslocamento = "saida" ) %>%
+      bind_rows(
+        dataset_analise %>%
+          filter(
+                 deslocamento ==1) %>%
+          group_by(codufmun) %>%
+          summarise(
+            numero_internacoes = n()
+          ) %>%
+          mutate(code_muni = codufmun,
+                 tipo_deslocamento = "entrada"),
+        dataset_analise %>%
+          filter(
+                 deslocamento ==0) %>%
+          group_by(codufmun) %>%
+          summarise(
+            numero_internacoes = n()
+          ) %>%
+          mutate(code_muni = codufmun,
+                 tipo_deslocamento = "local")
+      ) %>%
+  group_by(code_muni, tipo_deslocamento) %>%
+  summarise(
+    total_internacoes = sum(numero_internacoes)
   )
 
+agrupamento_municipio<-
+agrupamento_municipio %>%
+  tidyr::pivot_wider(names_from = tipo_deslocamento, values_from = total_internacoes) %>%
+  mutate(liquido = ifelse(is.na(entrada),0,entrada)+
+           ifelse(is.na(local),0,local)-
+           ifelse(is.na(saida),0,saida))
 
 
+
+municipios_seat %>%
+  mutate(code_muni = str_sub(as.character(code_muni),1,6)) %>%
+  inner_join(agrupamento_municipio
+  ) %>%
+  inner_join(
+    REGIC_trabalho%>%
+      mutate(code_muni = str_sub(as.character(cod_cidade),1,6))
+  ) %>%
+  filter(liquido!=0) %>%
+  mutate(liquido=ifelse(liquido<0,-1*log2(-liquido),log2(liquido))) %>%
+  #mutate(liquido = liquido/populacao) %>%
+  ggplot()+
+  geom_sf(data = estados, fill=NA, color="#808080")+
+  geom_sf(aes( fill= liquido),pch=21, color="#444444", size=2.9)+
+  geom_text_repel(data = mun_sel_nivel_1A,aes(x=X, y=Y, label= name_muni),fontface = "bold", color="white")+
+  geom_text_repel(data = mun_sel_nivel_1B,aes(x=X, y=Y, label= name_muni),fontface = "bold", color="white")+
+  geom_text_repel(data = mun_sel_nivel_1C,aes(x=X, y=Y, label= name_muni),fontface = "bold", color="white")+
+  geom_text_repel(data = mun_sel_nivel_2A,aes(x=X, y=Y, label= name_muni),fontface = "bold", color="white", force =2)+
+  scale_fill_continuous_divergingx(palette= "Zissou 1", rev= TRUE)+
+  labs(
+    fill= str_wrap("Nº de internações",20) 
+  )+
+  theme_light() +
+  theme(
+    text = element_text(size=20),
+    panel.background = element_rect(fill = "black"),
+    panel.grid = element_blank(),
+    axis.title.x = element_blank(),
+    axis.title.y = element_blank(),
+    strip.background = element_rect(fill = "#505050"),
+    strip.text = element_text(color = "white"),
+    axis.text = element_blank(),
+    legend.key = element_rect(fill = "#15202B")
+    
+  )+
+  facet_wrap(nome_nivel_hierarquia_ordenado~.)
+
+```
+
+```{r}
+ # nodes<- 
+ #  dataset_analise %>%
+ #  distinct(nivel_hierarquia.x, nivel_hierarquia.y) %>%
+ #  mutate(nivel_hierarquia.y = paste(nivel_hierarquia.y,"destino"))
+ #  arrange(nivel_hierarquia.x) 
+ #  
+ # 
+ # links<-
+ #  dataset_analise %>%
+ #  filter(deslocamento==1) %>%
+ #  group_by(nivel_hierarquia.x, nivel_hierarquia.y) %>%
+ #  summarise(
+ #    n_internacoes = n()
+ #  ) %>%
+ #   ungroup()
+ # 
+ aluvial<-
+     dataset_analise %>%
+  filter(deslocamento==1) %>%
+  select(nome_nivel_hierarquia.x, nome_nivel_hierarquia.y) 
+   
+ 
+ # networkD3::
+ # 
+ # 
+ #  networkD3::sankeyNetwork(Links = links, Nodes = nodes, Source = "nivel_hierarquia.x",
+ #                Target = "nivel_hierarquia.y", Value = "n_internacoes", NodeID = "nivel_hierarquia.x",
+ #                units = "", fontSize = 8, nodeWidth = 30, nodePadding =6, NodeGroup = "nivel_hierarquia.y")
+ # 
+ p<- easyalluvial::alluvial_wide(aluvial)
+ 
+ parcats::parcats(p, data_input = aluvial, marginal_histograms = FALSE)
 ```
 

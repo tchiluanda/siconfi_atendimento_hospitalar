@@ -163,3 +163,28 @@ base_ml_balanceada %>%
   ggplot() +
   geom_bar(aes(y=faixas_percentuais, fill=tipo_deslocamento))
 
+########### clusterização por tipo de deslocamento
+
+library(cluster)
+
+dataset_analise %>%
+  mutate(deslocamento = as.factor(deslocamento)) %>%
+  group_by(deslocamento,nome_nivel_hierarquia.x, munic_res) %>%
+  summarise(
+    quantidade_internacoes =n()
+  )%>%
+  mutate(tipo_deslocamento = ifelse(deslocamento=="0","local","saída")) %>%
+  mutate(nome_nivel_hierarquia = reorder(nome_nivel_hierarquia.x, quantidade_internacoes)) %>%
+  ungroup() %>%
+  bind_rows(
+    dataset_analise %>%
+      filter(deslocamento == 1) %>%
+      mutate(deslocamento = as.factor(deslocamento)) %>%
+      group_by(deslocamento,nome_nivel_hierarquia.y) %>%
+      summarise(
+        quantidade_internacoes =n()
+      )%>%
+      mutate(tipo_deslocamento = "chegada") %>%
+      mutate(nome_nivel_hierarquia= reorder(nome_nivel_hierarquia.y, quantidade_internacoes)) %>%
+      ungroup()
+  )
