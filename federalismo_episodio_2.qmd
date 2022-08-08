@@ -403,7 +403,7 @@ municipios_seat %>%
   geom_text_repel(data = mun_sel_nivel_1B,aes(x=X, y=Y, label= name_muni),fontface = "bold", color="white")+
   geom_text_repel(data = mun_sel_nivel_1C,aes(x=X, y=Y, label= name_muni),fontface = "bold", color="white")+
   geom_text_repel(data = mun_sel_nivel_2A,aes(x=X, y=Y, label= name_muni),fontface = "bold", color="white", force =2)+
-  scale_fill_continuous_divergingx(palette= "Zissou 1", rev= TRUE)+
+  scale_fill_continuous_divergingx(palette= "Zissou 1", rev= FALSE)+
   labs(
     fill= str_wrap("Nº de internações",20) 
   )+
@@ -423,39 +423,206 @@ municipios_seat %>%
   facet_wrap(nome_nivel_hierarquia_ordenado~.)
 
 ```
+```{r fig.width=20, fig.height=10, fig.dpi=300}
+agrupamento_municipio<-
+agrupamento_municipio %>%
+  mutate(local = ifelse(is.na(local),0,local),
+         saida = ifelse(is.na(saida),0,saida),
+         entrada = ifelse(is.na(entrada),0,entrada),
+         perc_saida = saida/(saida+local)*100,
+         perc_entrada = entrada/(entrada+local)*100,
+         perc_entrada = ifelse(is.nan(perc_entrada),0,perc_entrada))
+  
 
-```{r}
- # nodes<- 
- #  dataset_analise %>%
- #  distinct(nivel_hierarquia.x, nivel_hierarquia.y) %>%
- #  mutate(nivel_hierarquia.y = paste(nivel_hierarquia.y,"destino"))
- #  arrange(nivel_hierarquia.x) 
- #  
- # 
- # links<-
- #  dataset_analise %>%
- #  filter(deslocamento==1) %>%
- #  group_by(nivel_hierarquia.x, nivel_hierarquia.y) %>%
- #  summarise(
- #    n_internacoes = n()
- #  ) %>%
- #   ungroup()
- # 
+municipios_seat %>%
+  mutate(code_muni = str_sub(as.character(code_muni),1,6)) %>%
+  inner_join(agrupamento_municipio
+  ) %>%
+  inner_join(
+    REGIC_trabalho%>%
+      mutate(code_muni = str_sub(as.character(cod_cidade),1,6))
+  ) %>%
+  ggplot()+
+  geom_sf(data = estados, fill=NA, color="#808080")+
+  geom_sf(aes( fill= perc_saida),pch=21, color="#444444", size=1.9)+
+  geom_text_repel(data = mun_sel_nivel_1A,aes(x=X, y=Y, label= name_muni),fontface = "bold", color="white")+
+  geom_text_repel(data = mun_sel_nivel_1B,aes(x=X, y=Y, label= name_muni),fontface = "bold", color="white")+
+  geom_text_repel(data = mun_sel_nivel_1C,aes(x=X, y=Y, label= name_muni),fontface = "bold", color="white")+
+  geom_text_repel(data = mun_sel_nivel_2A,aes(x=X, y=Y, label= name_muni),fontface = "bold", color="white", force =2)+
+  scale_fill_continuous_sequential(palette= "Red-Yellow")+
+  #scale_fill_continuous_divergingx(palette= "Zissou 1", rev= FALSE)+
+  labs(
+    fill= str_wrap("% de internações",20) 
+  )+
+  theme_light() +
+  theme(
+    text = element_text(size=20),
+    panel.background = element_rect(fill = "black"),
+    panel.grid = element_blank(),
+    axis.title.x = element_blank(),
+    axis.title.y = element_blank(),
+    strip.background = element_rect(fill = "#505050"),
+    strip.text = element_text(color = "white"),
+    axis.text = element_blank(),
+    legend.key = element_rect(fill = "#15202B")
+    
+  )+
+  facet_wrap(nome_nivel_hierarquia_ordenado~.)
+
+
+```
+
+```{r fig.width=20, fig.height=10, fig.dpi=300}
+municipios_seat %>%
+  mutate(code_muni = str_sub(as.character(code_muni),1,6)) %>%
+  inner_join(agrupamento_municipio
+  ) %>%
+  inner_join(
+    REGIC_trabalho%>%
+      mutate(code_muni = str_sub(as.character(cod_cidade),1,6))
+  ) %>%
+  ggplot()+
+  geom_sf(data = estados, fill=NA, color="#808080")+
+  geom_sf(aes( fill= perc_entrada),pch=21, color="#444444", size=2.9)+
+  geom_text_repel(data = mun_sel_nivel_1A,aes(x=X, y=Y, label= name_muni),fontface = "bold", color="white")+
+  geom_text_repel(data = mun_sel_nivel_1B,aes(x=X, y=Y, label= name_muni),fontface = "bold", color="white")+
+  geom_text_repel(data = mun_sel_nivel_1C,aes(x=X, y=Y, label= name_muni),fontface = "bold", color="white")+
+  geom_text_repel(data = mun_sel_nivel_2A,aes(x=X, y=Y, label= name_muni),fontface = "bold", color="white", force =2)+
+  scale_fill_continuous_sequential(palette= "Red-Yellow")+
+  labs(
+    fill= str_wrap("% de internações",20) 
+  )+
+  theme_light() +
+  theme(
+    text = element_text(size=20),
+    panel.background = element_rect(fill = "black"),
+    panel.grid = element_blank(),
+    axis.title.x = element_blank(),
+    axis.title.y = element_blank(),
+    strip.background = element_rect(fill = "#505050"),
+    strip.text = element_text(color = "white"),
+    axis.text = element_blank(),
+    legend.key = element_rect(fill = "#15202B")
+    
+  )+
+  facet_wrap(nome_nivel_hierarquia_ordenado~.)
+```
+
+
+
+```{r fig.width=20, fig.height=10}
+
+ordem_y<- 
+dataset_analise %>%
+  filter(deslocamento==1,
+         nome_nivel_hierarquia.x == "Centro Local") %>%
+  group_by(nome_nivel_hierarquia.y) %>%
+  summarise(
+    quantidade = n()
+  ) %>%
+  arrange(quantidade)
+
  aluvial<-
      dataset_analise %>%
-  filter(deslocamento==1) %>%
-  select(nome_nivel_hierarquia.x, nome_nivel_hierarquia.y) 
-   
- 
- # networkD3::
- # 
- # 
- #  networkD3::sankeyNetwork(Links = links, Nodes = nodes, Source = "nivel_hierarquia.x",
- #                Target = "nivel_hierarquia.y", Value = "n_internacoes", NodeID = "nivel_hierarquia.x",
- #                units = "", fontSize = 8, nodeWidth = 30, nodePadding =6, NodeGroup = "nivel_hierarquia.y")
- # 
+  filter(deslocamento==1,
+         nome_nivel_hierarquia.x == "Centro Local") %>%
+  mutate(saída = nome_nivel_hierarquia.x,
+         entrada =nome_nivel_hierarquia.y ) %>%
+  select(saída, entrada) 
+  
+  
+aluvial$entrada <- factor(aluvial$entrada, levels = unique(ordem_y$nome_nivel_hierarquia.y[order(ordem_y$quantidade)])) 
+  
  p<- easyalluvial::alluvial_wide(aluvial)
  
- parcats::parcats(p, data_input = aluvial, marginal_histograms = FALSE)
+ parcats::parcats(p, data_input = aluvial,marginal_histograms = FALSE)
+```
+
+```{r}
+
+ordem_x<- 
+dataset_analise %>%
+  filter(deslocamento==1,
+         nome_nivel_hierarquia.y %in% c("Centro Sub-Regional B")) %>%
+  group_by(nome_nivel_hierarquia.x) %>%
+  summarise(
+    quantidade = n()
+  ) %>%
+  arrange(quantidade)
+
+
+
+aluvial<-
+     dataset_analise %>%
+  filter(deslocamento==1,
+         nome_nivel_hierarquia.y %in% c("Centro Sub-Regional B")) %>%
+  mutate(saida = nome_nivel_hierarquia.x,
+         entrada =nome_nivel_hierarquia.y ) %>%
+  select(saida, entrada) 
+   
+aluvial$saida<- factor(aluvial$saida , levels = unique(ordem_x$nome_nivel_hierarquia.x[order(ordem_x$quantidade)])) 
+  
+ p<- easyalluvial::alluvial_wide(aluvial)
+ 
+ parcats::parcats(p, data_input = aluvial,marginal_histograms = FALSE)
+
+```
+
+```{r}
+
+ordem_y<- 
+dataset_analise %>%
+  filter(deslocamento==1,
+         nome_nivel_hierarquia.x %in% c("Capital Regional B","Capital Regional C", "Centro Sub-Regional B")) %>%
+  group_by(nome_nivel_hierarquia.y) %>%
+  summarise(
+    quantidade = n()
+  ) %>%
+  arrange(desc(quantidade))
+
+aluvial<-
+     dataset_analise %>%
+  filter(deslocamento==1,
+         nome_nivel_hierarquia.x %in% c("Capital Regional B","Capital Regional C", "Centro Sub-Regional B")) %>%
+  mutate(saída = nome_nivel_hierarquia.x,
+         entrada =nome_nivel_hierarquia.y ) %>%
+  select(saída, entrada) 
+   
+aluvial$entrada <- factor(aluvial$entrada, levels = unique(ordem_y$nome_nivel_hierarquia.y[order(ordem_y$quantidade)])) 
+  
+ p<- easyalluvial::alluvial_wide(aluvial)
+ 
+ parcats::parcats(p, data_input = aluvial,marginal_histograms = FALSE, sortpaths= "backward")
+```
+
+```{r}
+
+ordem_y<- 
+dataset_analise %>%
+  filter(deslocamento==1,
+         nome_nivel_hierarquia.x %in% c("Centro de Zona B")) %>%
+  group_by(nome_nivel_hierarquia.y) %>%
+  summarise(
+    quantidade = n()
+  ) %>%
+  arrange(desc(quantidade))
+
+aluvial<-
+     dataset_analise %>%
+  filter(deslocamento==1,
+         nome_nivel_hierarquia.x %in% c("Centro de Zona B")) %>%
+  mutate(saída = nome_nivel_hierarquia.x,
+         entrada =nome_nivel_hierarquia.y ) %>%
+  select(saída, entrada) 
+   
+aluvial$entrada <- factor(aluvial$entrada, levels = unique(ordem_y$nome_nivel_hierarquia.y[order(ordem_y$quantidade)])) 
+  
+ p<- easyalluvial::alluvial_wide(aluvial)
+ 
+ parcats::parcats(p, data_input = aluvial,marginal_histograms = FALSE)
+```
+
+```{r}
+
 ```
 

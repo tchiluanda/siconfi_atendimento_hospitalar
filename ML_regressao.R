@@ -45,7 +45,7 @@ fancyRpartPlot(dt_model$finalModel)
 ###Testando alguns achados do primeiro modelo
 
 #1 - 58% dos deslocamentos que envolvem Centro locais estão associados à saída e é a categoria mais relevante para esse resultado
-#2 - 95% dos deslocamentos que envolvem metrópoles nacional são associados a atendimentos locais
+#2 - 95% dos deslocamentos que envolvem metrópoles nacionais são associados a atendimentos locais
 dataset_analise %>%
   filter(deslocamento==0) %>%
   mutate(tipo_deslocamento = "local",
@@ -163,6 +163,9 @@ base_ml_balanceada %>%
   ggplot() +
   geom_bar(aes(y=faixas_percentuais, fill=tipo_deslocamento))
 
+
+
+
 ########### clusterização por tipo de deslocamento
 
 library(cluster)
@@ -188,3 +191,40 @@ dataset_analise %>%
       mutate(nome_nivel_hierarquia= reorder(nome_nivel_hierarquia.y, quantidade_internacoes)) %>%
       ungroup()
   )
+
+
+
+######### Outra experiência com decision tree
+
+#com três variáveis.
+base_ml_hierarquia_saida<-
+  dataset_analise %>%
+  filter(deslocamento==1) %>%
+
+
+
+
+  mutate(tipo_deslocamento = "local",
+         nivel_hierarquia=nivel_hierarquia.x,
+         percentual = perc.x) %>%
+  select(nivel_hierarquia,percentual, tipo_deslocamento) %>%
+  bind_rows(
+    dataset_analise %>%
+      filter(deslocamento==1) %>%
+      mutate(tipo_deslocamento = "saida",
+             nivel_hierarquia=nivel_hierarquia.x,
+             percentual = perc.x)%>%
+      select(nivel_hierarquia,percentual, tipo_deslocamento),
+    dataset_analise %>%
+      filter(deslocamento==1) %>%
+      mutate(tipo_deslocamento = "entrada",
+             nivel_hierarquia=nivel_hierarquia.y,
+             percentual = perc.y)%>%
+      select(nivel_hierarquia, percentual, tipo_deslocamento)
+
+  )
+
+
+
+agrupamento_municipio %>%
+  ungroup() %>%
