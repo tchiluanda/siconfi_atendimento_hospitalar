@@ -234,7 +234,7 @@ municipios_seat %>%
       mutate(code_muni = as.numeric(id_municipio))
   ) %>%
   ggplot()+
-  geom_sf(data = estados, fill=NA, color="#808080")+
+  geom_sf(data = estados_mapa, fill=NA, color="#808080")+
   geom_sf(aes( fill= pop_cut),pch=21, color="#444444", size=2.9)+
   geom_text_repel(data = mun_sel_nivel_1A,aes(x=X, y=Y, label= name_muni),fontface = "bold", color="white")+
   geom_text_repel(data = mun_sel_nivel_1B,aes(x=X, y=Y, label= name_muni),fontface = "bold", color="white")+
@@ -265,6 +265,7 @@ municipios_seat %>%
 
 #Distribuição de quantidade de internações distribuição de tipos de internação por regic 
 g1<-dataset_analise %>%
+  filter(!is.na(nome_nivel_hierarquia.x)) %>%
   mutate(deslocamento = as.factor(deslocamento)) %>%
   group_by(deslocamento,nome_nivel_hierarquia.x) %>%
   summarise(
@@ -275,7 +276,8 @@ g1<-dataset_analise %>%
   ungroup() %>%
   bind_rows(
     dataset_analise %>%
-      filter(deslocamento == 1) %>%
+      filter(deslocamento == 1,
+             !is.na(nome_nivel_hierarquia.y)) %>%
       mutate(deslocamento = as.factor(deslocamento)) %>%
       group_by(deslocamento,nome_nivel_hierarquia.y) %>%
       summarise(
@@ -286,7 +288,6 @@ g1<-dataset_analise %>%
       ungroup()
   ) %>%
   ggplot() +
-  #scale_fill_discrete_qualitative(palette = "Dark 3")+ 
   geom_col(aes(x=quantidade_internacoes, y=fct_reorder(nome_nivel_hierarquia, quantidade_internacoes,sum)),fill="white")+
   scale_x_continuous(labels = function(x){format(x,big.mark = ".",decimal.mark = ",", scientific =FALSE)} )+
   theme_light() +
@@ -300,6 +301,7 @@ g1<-dataset_analise %>%
 
 #Distribuição de quantidade de internações distribuição de tipos de internação por regic 
 g2<-dataset_analise %>%
+  filter(!is.na(nome_nivel_hierarquia.x)) %>%
   mutate(deslocamento = as.factor(deslocamento)) %>%
   group_by(deslocamento,nome_nivel_hierarquia.x) %>%
   summarise(
@@ -310,7 +312,8 @@ g2<-dataset_analise %>%
   ungroup() %>%
   bind_rows(
     dataset_analise %>%
-      filter(deslocamento == 1) %>%
+      filter(deslocamento == 1,
+             !is.na(nome_nivel_hierarquia.y)) %>%
       mutate(deslocamento = as.factor(deslocamento)) %>%
       group_by(deslocamento,nome_nivel_hierarquia.y) %>%
       summarise(
@@ -339,7 +342,6 @@ cowplot::ggdraw()+
 ```
 
 ```{r fig.width=20, fig.height=10, fig.dpi=300}
-
 
 agrupamento_municipio<-
     dataset_analise %>%
@@ -383,47 +385,6 @@ agrupamento_municipio %>%
            ifelse(is.na(local),0,local)-
            ifelse(is.na(saida),0,saida))
 
-
-
-municipios_seat %>%
-  mutate(code_muni = str_sub(as.character(code_muni),1,6)) %>%
-  inner_join(agrupamento_municipio
-  ) %>%
-  inner_join(
-    REGIC_trabalho%>%
-      mutate(code_muni = str_sub(as.character(cod_cidade),1,6))
-  ) %>%
-  filter(liquido!=0) %>%
-  mutate(liquido=ifelse(liquido<0,-1*log2(-liquido),log2(liquido))) %>%
-  #mutate(liquido = liquido/populacao) %>%
-  ggplot()+
-  geom_sf(data = estados, fill=NA, color="#808080")+
-  geom_sf(aes( fill= liquido),pch=21, color="#444444", size=2.9)+
-  geom_text_repel(data = mun_sel_nivel_1A,aes(x=X, y=Y, label= name_muni),fontface = "bold", color="white")+
-  geom_text_repel(data = mun_sel_nivel_1B,aes(x=X, y=Y, label= name_muni),fontface = "bold", color="white")+
-  geom_text_repel(data = mun_sel_nivel_1C,aes(x=X, y=Y, label= name_muni),fontface = "bold", color="white")+
-  geom_text_repel(data = mun_sel_nivel_2A,aes(x=X, y=Y, label= name_muni),fontface = "bold", color="white", force =2)+
-  scale_fill_continuous_divergingx(palette= "Zissou 1", rev= FALSE)+
-  labs(
-    fill= str_wrap("Nº de internações",20) 
-  )+
-  theme_light() +
-  theme(
-    text = element_text(size=20),
-    panel.background = element_rect(fill = "black"),
-    panel.grid = element_blank(),
-    axis.title.x = element_blank(),
-    axis.title.y = element_blank(),
-    strip.background = element_rect(fill = "#505050"),
-    strip.text = element_text(color = "white"),
-    axis.text = element_blank(),
-    legend.key = element_rect(fill = "#15202B")
-    
-  )+
-  facet_wrap(nome_nivel_hierarquia_ordenado~.)
-
-```
-```{r fig.width=20, fig.height=10, fig.dpi=300}
 agrupamento_municipio<-
 agrupamento_municipio %>%
   mutate(local = ifelse(is.na(local),0,local),
@@ -443,16 +404,15 @@ municipios_seat %>%
       mutate(code_muni = str_sub(as.character(cod_cidade),1,6))
   ) %>%
   ggplot()+
-  geom_sf(data = estados, fill=NA, color="#808080")+
-  geom_sf(aes( fill= perc_saida),pch=21, color="#444444", size=1.9)+
+  geom_sf(data = estados_mapa, fill=NA, color="#808080")+
+  geom_sf(aes( fill= perc_saida),pch=21, color="#444444", size=2.9)+
   geom_text_repel(data = mun_sel_nivel_1A,aes(x=X, y=Y, label= name_muni),fontface = "bold", color="white")+
   geom_text_repel(data = mun_sel_nivel_1B,aes(x=X, y=Y, label= name_muni),fontface = "bold", color="white")+
   geom_text_repel(data = mun_sel_nivel_1C,aes(x=X, y=Y, label= name_muni),fontface = "bold", color="white")+
   geom_text_repel(data = mun_sel_nivel_2A,aes(x=X, y=Y, label= name_muni),fontface = "bold", color="white", force =2)+
-  scale_fill_continuous_sequential(palette= "Red-Yellow")+
-  #scale_fill_continuous_divergingx(palette= "Zissou 1", rev= FALSE)+
+  scale_fill_continuous_sequential(palette= "Heat 2")+
   labs(
-    fill= str_wrap("% de internações",20) 
+    fill= str_wrap("% de internações de saída",15) 
   )+
   theme_light() +
   theme(
@@ -475,22 +435,22 @@ municipios_seat %>%
 ```{r fig.width=20, fig.height=10, fig.dpi=300}
 municipios_seat %>%
   mutate(code_muni = str_sub(as.character(code_muni),1,6)) %>%
-  inner_join(agrupamento_municipio
+  left_join(agrupamento_municipio
   ) %>%
   inner_join(
     REGIC_trabalho%>%
       mutate(code_muni = str_sub(as.character(cod_cidade),1,6))
   ) %>%
   ggplot()+
-  geom_sf(data = estados, fill=NA, color="#808080")+
+  geom_sf(data = estados_mapa, fill=NA, color="#808080")+
   geom_sf(aes( fill= perc_entrada),pch=21, color="#444444", size=2.9)+
   geom_text_repel(data = mun_sel_nivel_1A,aes(x=X, y=Y, label= name_muni),fontface = "bold", color="white")+
   geom_text_repel(data = mun_sel_nivel_1B,aes(x=X, y=Y, label= name_muni),fontface = "bold", color="white")+
   geom_text_repel(data = mun_sel_nivel_1C,aes(x=X, y=Y, label= name_muni),fontface = "bold", color="white")+
   geom_text_repel(data = mun_sel_nivel_2A,aes(x=X, y=Y, label= name_muni),fontface = "bold", color="white", force =2)+
-  scale_fill_continuous_sequential(palette= "Red-Yellow")+
+  scale_fill_continuous_sequential(palette= "Heat 2")+
   labs(
-    fill= str_wrap("% de internações",20) 
+    fill= str_wrap("% de internações de entrada",15) 
   )+
   theme_light() +
   theme(
@@ -538,7 +498,7 @@ aluvial$entrada <- factor(aluvial$entrada, levels = unique(ordem_y$nome_nivel_hi
  parcats::parcats(p, data_input = aluvial,marginal_histograms = FALSE)
 ```
 
-```{r}
+```{r fig.width=20, fig.height=10}
 
 ordem_x<- 
 dataset_analise %>%
@@ -568,7 +528,7 @@ aluvial$saida<- factor(aluvial$saida , levels = unique(ordem_x$nome_nivel_hierar
 
 ```
 
-```{r}
+```{r fig.width=20, fig.height=10}
 
 ordem_y<- 
 dataset_analise %>%
@@ -622,7 +582,164 @@ aluvial$entrada <- factor(aluvial$entrada, levels = unique(ordem_y$nome_nivel_hi
  parcats::parcats(p, data_input = aluvial,marginal_histograms = FALSE)
 ```
 
-```{r}
+```{r fig.width=20, fig.height=10}
+
+
+media_entrada<- mean(agrupamento_municipio$entrada)
+media_saida<- mean(agrupamento_municipio$saida)
+
+agrupamento_municipio_distancia<-
+  dataset_analise %>%
+  filter(deslocamento == 1) %>%
+  group_by(munic_res) %>%
+  summarise(
+    media_distancia = -1* mean(distancia, na.rm = TRUE)
+  ) %>%
+  ungroup() %>%
+  rename(code_muni= munic_res) %>%
+  inner_join(
+    agrupamento_municipio %>%
+      filter(perc_saida > perc_entrada)
+  ) %>%
+  bind_rows(
+    dataset_analise %>%
+      #filter(deslocamento == 1) %>%
+      group_by(codufmun) %>%
+      summarise(
+        media_distancia = mean(distancia, na.rm = TRUE)
+      ) %>%
+      ungroup() %>%
+      rename(code_muni= codufmun) %>%
+      inner_join(
+        agrupamento_municipio %>%
+          filter(perc_entrada > perc_saida)
+      ),
+      dataset_analise %>%
+      #filter(deslocamento == 1) %>%
+      group_by(codufmun) %>%
+      summarise(
+        media_distancia = mean(distancia, na.rm = TRUE) 
+      ) %>%
+      ungroup() %>%
+      rename(code_muni= codufmun) %>%
+      inner_join(
+        agrupamento_municipio %>%
+          filter(perc_entrada == perc_saida,
+                 liquido >= 0)
+      ),
+      dataset_analise %>%
+      #filter(deslocamento == 1) %>%
+      group_by(codufmun) %>%
+      summarise(
+        media_distancia = -mean(distancia, na.rm = TRUE) 
+      ) %>%
+      ungroup() %>%
+      rename(code_muni= codufmun) %>%
+      inner_join(
+        agrupamento_municipio %>%
+          filter(perc_entrada == perc_saida,
+                 liquido < 0)
+      ) 
+
+  ) %>% 
+  mutate(media_ajustada = ifelse(media_distancia>=0,media_distancia*(perc_entrada/100)*ifelse((entrada/media_entrada)>1,1,(entrada/media_entrada)),
+                                   media_distancia*(perc_saida/100)*ifelse((saida/media_saida)>1,1,(saida/media_saida))))
+
+
+
+
+municipios %>%
+  mutate(code_muni = str_sub(as.character(code_muni),1,6)) %>%
+  left_join(
+    agrupamento_municipio_distancia
+  ) %>%
+  ggplot()+
+  geom_sf(aes( fill= media_ajustada),  color=NA, size=0.01)+
+  geom_sf(data = estados_mapa, fill=NA, color="black")+
+  scale_fill_continuous_divergingx(palette= "Zissou 1" , na.value="white", trans="pseudo_log", rev=TRUE, breaks=c(0,100,-150))+
+  labs(
+    fill= str_wrap("distância média ajustada (em km)",10) 
+  )+
+  theme_light() +
+  theme(
+    text = element_text(size=18),
+    panel.background = element_rect(fill = "black"),
+    panel.grid = element_blank(),
+    axis.title.x = element_blank(),
+    axis.title.y = element_blank(),
+    strip.background = element_rect(fill = "#505050"),
+    strip.text = element_text(color = "white"),
+    axis.text = element_blank(),
+    legend.key = element_rect(fill = "#15202B")
+    
+  )
+
 
 ```
+
+```{r fig.width=20, fig.height=10}
+
+muni_sel<- 
+  dataset_analise %>%
+  filter(deslocamento ==1,
+         munic_res==	"410300") %>%
+  distinct(munic_res,nome_nivel_hierarquia_ordenado.x, uf.x) %>%
+  rename(code_muni= munic_res,
+         hierarquia = nome_nivel_hierarquia_ordenado.x,
+         uf = uf.x) %>%
+  mutate(tipo_deslocamento  = "origem",
+         distancia = 0) %>%
+  bind_rows(
+      dataset_analise %>%
+  filter(deslocamento ==1,
+         munic_res==	"410300") %>%
+  group_by(codufmun,nome_nivel_hierarquia_ordenado.y, uf.y) %>%
+  summarise(
+    quantidade = n(),
+    distancia =min(distancia)
+  ) %>%
+  ungroup() %>%
+  rename(code_muni= codufmun,
+         hierarquia = nome_nivel_hierarquia_ordenado.y,
+         uf=uf.y)%>%
+  mutate(tipo_deslocamento  = "destino")
+  )
+
+uf_sel<- unique(muni_sel$uf)
+
+
+regiao<- unique(estados_mapa$code_region[estados_mapa$abbrev_state %in% uf_sel])
+
+
+municipios_seat %>%
+  mutate(code_muni = str_sub(as.character(code_muni),1,6)) %>%
+  inner_join(
+    muni_sel
+  ) %>%
+  ggplot()+
+  #geom_sf(data = brasil, fill= NA, color="white")+
+  geom_sf(data = estados_mapa[estados_mapa$code_region %in% regiao,], fill=NA, color="white")+
+  #geom_sf(data= municipios[municipios$abbrev_state %in% uf_sel,],fill=NA, color="lightblue")+
+  #geom_sf(aes( fill= tipo_deslocamento),  color=NA, size=0.01)+
+  geom_sf(aes( fill= tipo_deslocamento),pch=21, color="#444444", size=3.9)+
+  scale_fill_discrete_qualitative(palette="dark2")+
+  labs(
+    fill= str_wrap("distância média ajustada (em km)",10) 
+  )+
+  theme_light() +
+  theme(
+    text = element_text(size=18),
+    panel.background = element_rect(fill = "black"),
+    panel.grid = element_blank(),
+    axis.title.x = element_blank(),
+    axis.title.y = element_blank(),
+    strip.background = element_rect(fill = "#505050"),
+    strip.text = element_text(color = "white"),
+    axis.text = element_blank(),
+    legend.key = element_rect(fill = "#15202B")
+    
+  )
+
+```
+
 

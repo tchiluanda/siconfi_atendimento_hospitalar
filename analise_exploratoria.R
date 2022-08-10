@@ -317,7 +317,6 @@ dataset_analise %>%
   ggplot(aes(x=quantidade_deslocamentos, y=munic_res, fill= nome_nivel_hierarquia.x)) +
   geom_col()
 
-
 dataset_analise %>%
   filter(deslocamento==1) %>%
   group_by(nome_nivel_hierarquia.y,mun_res_nome.y) %>%
@@ -342,6 +341,8 @@ dataset_analise %>%
   mutate(munic_res = reorder(mun_res_nome.x,quantidade_deslocamentos)) %>%
   ggplot(aes(x=quantidade_deslocamentos, y=munic_res, fill= nome_nivel_hierarquia.x)) +
   geom_col()
+
+
 
 
 ###########Ranking cidades: Valores percentuais

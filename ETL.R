@@ -64,7 +64,7 @@ median(pop_municipios$populacao)
 municipios_seat<- geobr::read_municipal_seat()
 municipios<- geobr::read_municipality()
 
-estados<- geobr::read_state()
+estados_mapa<- geobr::read_state()
 
 gastos_hospitais_pc<-
 pop_municipios %>%
@@ -352,6 +352,8 @@ dados_sih_3 <- readRDS("~/Github/siconfi_atendimento_hospitalar/dados_sih_3.RDS"
 
 
 #construção de uma amostra com 10% dos atendimentos hospitalares (1,06 milhões de atendimento)
+set.seed(1972)
+
 sample_sih<-
   dados_sih_1 %>%
   slice_sample(prop=0.1) %>%
@@ -361,6 +363,8 @@ sample_sih<-
     dados_sih_3 %>%
       slice_sample(prop = 0.1)
   )
+
+saveRDS(sample_sih,file = "sample_sih.RDS")
 
 #######Dados sobre os hospitais
 
@@ -385,6 +389,8 @@ dados_cnes<-
     microdatasus::process_cnes(res)
   })
 
+
+saveRDS(dados_cnes,file = "dados_cnes.RDS")
 
 dados_cnes %>%
   anti_join(
@@ -455,7 +461,35 @@ sih_trabalho <- janitor::clean_names(sih_trabalho)
 ###Montagem do dataset único
 dataset_analise_old<- dataset_analise
 
-dataset_analise <-
+
+dataset_analise<-
+sih_trabalho %>%
+  inner_join(
+    gastos_trabalho %>%
+      mutate(munic_res = str_sub(id_municipio,1,6))
+  ) %>%
+  left_join(
+    REGIC_trabalho %>%
+      mutate(munic_res = str_sub(as.character(cod_cidade),1,6)),
+    by = "munic_res"
+  ) %>%
+  inner_join(
+    cnes_trabalho,
+    by="cnes"
+  ) %>%
+  inner_join(
+    gastos_trabalho %>%
+      mutate(codufmun= str_sub(id_municipio,1,6) ) %>%
+      select(codufmun, perc, populacao, gasto_pc),
+    by= "codufmun"
+  ) %>%
+  inner_join(
+    REGIC_trabalho %>%
+      mutate(codufmun = str_sub(as.character(cod_cidade),1,6)),
+    by= "codufmun"
+  )
+
+dataset_analise_old <-
 
 sih_trabalho %>%
   inner_join(
@@ -542,5 +576,5 @@ pop_municipios <-
   bd_collect()
 
 
-save(list=c("REGIC_trabalho","municipios_seat","municipios","estados","brasil","pop_municipios"), file = "dados_auxiliares.RData")
+save(list=c("REGIC_trabalho","municipios_seat","municipios","estados_mapa","brasil","pop_municipios"), file = "dados_auxiliares.RData")
 
