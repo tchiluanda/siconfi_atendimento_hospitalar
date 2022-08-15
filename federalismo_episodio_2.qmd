@@ -19,6 +19,7 @@ library(viridis)
 library(sf)
 library(ggrepel)
 library(colorspace)
+library(patchwork)
 
 dataset_analise <- readRDS("~/Github/siconfi_atendimento_hospitalar/dataset_analise.RDS")
 
@@ -99,7 +100,7 @@ dataset_analise %>%
     panel.grid = element_blank(),
     axis.title.y = element_blank(),
     axis.text.x = element_text(angle = 90),
-    axis.title.x = element_text(hjust = 0.7)
+    axis.title.x = element_text(hjust = 0.8)
   ) +
   labs(
     x= "Nº de internações",
@@ -154,10 +155,13 @@ dataset_analise %>%
     title = "Local"
   )
 
-cowplot::ggdraw()+
-  cowplot::draw_plot(g1,0, 0, .3, 1)+
-  cowplot::draw_plot(g2,.3, 0, .3, 1)+
-  cowplot::draw_plot(g3,.6, 0, .3, 1)
+
+g1|g2|g3
+
+# cowplot::ggdraw()+
+#   cowplot::draw_plot(g1,0, 0, .3, 1)+
+#   cowplot::draw_plot(g2,.3, 0, .3, 1)+
+#   cowplot::draw_plot(g3,.6, 0, .3, 1)
 
 
 ```
@@ -341,7 +345,7 @@ cowplot::ggdraw()+
 
 ```
 
-```{r fig.width=20, fig.height=10, fig.dpi=300}
+```{r fig.width=20, fig.height=10, fig.dpi=500}
 
 agrupamento_municipio<-
     dataset_analise %>%
@@ -432,7 +436,7 @@ municipios_seat %>%
 
 ```
 
-```{r fig.width=20, fig.height=10, fig.dpi=300}
+```{r fig.width=20, fig.height=10, fig.dpi=500}
 municipios_seat %>%
   mutate(code_muni = str_sub(as.character(code_muni),1,6)) %>%
   left_join(agrupamento_municipio
@@ -582,7 +586,7 @@ aluvial$entrada <- factor(aluvial$entrada, levels = unique(ordem_y$nome_nivel_hi
  parcats::parcats(p, data_input = aluvial,marginal_histograms = FALSE)
 ```
 
-```{r fig.width=20, fig.height=10}
+```{r fig.width=20, fig.height=10, fig.dpi=500}
 
 
 media_entrada<- mean(agrupamento_municipio$entrada)
@@ -677,13 +681,14 @@ municipios %>%
 
 ```
 
-```{r fig.width=20, fig.height=10}
+```{r fig.width=20, fig.height=10, fig.dpi=500}
 
 muni_sel<- 
   dataset_analise %>%
   filter(deslocamento ==1,
-         munic_res==	"410300") %>%
-  distinct(munic_res,nome_nivel_hierarquia_ordenado.x, uf.x) %>%
+         munic_res==	"150553") %>%
+  group_by(munic_res,nome_nivel_hierarquia_ordenado.x, uf.x) %>%
+  summarise(quantidade = n()) %>%
   rename(code_muni= munic_res,
          hierarquia = nome_nivel_hierarquia_ordenado.x,
          uf = uf.x) %>%
@@ -692,7 +697,7 @@ muni_sel<-
   bind_rows(
       dataset_analise %>%
   filter(deslocamento ==1,
-         munic_res==	"410300") %>%
+         munic_res==	"150553") %>%
   group_by(codufmun,nome_nivel_hierarquia_ordenado.y, uf.y) %>%
   summarise(
     quantidade = n(),
@@ -703,28 +708,267 @@ muni_sel<-
          hierarquia = nome_nivel_hierarquia_ordenado.y,
          uf=uf.y)%>%
   mutate(tipo_deslocamento  = "destino")
-  )
-
-uf_sel<- unique(muni_sel$uf)
-
-
-regiao<- unique(estados_mapa$code_region[estados_mapa$abbrev_state %in% uf_sel])
+  ) %>%
+  ungroup() 
 
 
+
+
+muni_sel_posicao<-
+   dataset_analise %>%
+  filter(deslocamento ==1,
+         munic_res==	"150553") %>%
+  distinct(munic_res, mun_res_lat.x, mun_res_lat.y, mun_res_lon.x, mun_res_lon.y,distancia)
+
+muni_sel_posicao<-
+  municipios_seat %>%
+  mutate(code_muni = str_sub(as.character(code_muni),1,6)) %>%
+  inner_join(
+    muni_sel_posicao %>%
+      rename(code_muni= munic_res)
+  ) 
+
+
+muni_sel_repel<-
+  municipios_seat %>%
+  mutate(code_muni = str_sub(as.character(code_muni),1,6)) %>%
+  filter(code_muni %in% c("150553","150140","150420"))
+
+  
+
+xmin<- min(min(muni_sel_posicao$mun_res_lon.x), min(muni_sel_posicao$mun_res_lon.y)) -1
+xmax <- max(max(muni_sel_posicao$mun_res_lon.x), max(muni_sel_posicao$mun_res_lon.y)) +1
+
+
+ymin<- min(min(muni_sel_posicao$mun_res_lat.x), min(muni_sel_posicao$mun_res_lat.y)) -1
+ymax <- max(max(muni_sel_posicao$mun_res_lat.x), max(muni_sel_posicao$mun_res_lat.y)) +1
+
+g1<-
 municipios_seat %>%
   mutate(code_muni = str_sub(as.character(code_muni),1,6)) %>%
   inner_join(
     muni_sel
   ) %>%
   ggplot()+
-  #geom_sf(data = brasil, fill= NA, color="white")+
-  geom_sf(data = estados_mapa[estados_mapa$code_region %in% regiao,], fill=NA, color="white")+
-  #geom_sf(data= municipios[municipios$abbrev_state %in% uf_sel,],fill=NA, color="lightblue")+
-  #geom_sf(aes( fill= tipo_deslocamento),  color=NA, size=0.01)+
-  geom_sf(aes( fill= tipo_deslocamento),pch=21, color="#444444", size=3.9)+
+  geom_sf(data = estados_mapa, fill=NA, color="#505050")+
+  geom_curve(data=muni_sel_posicao, aes(x=mun_res_lon.x,y=mun_res_lat.x,xend=mun_res_lon.y,yend=mun_res_lat.y, colour= distancia),
+             curvature = -.25, ncp = 800,size = 1)+
+  geom_sf(fill="white",size=1.9,pch=21, color="#444444")+
   scale_fill_discrete_qualitative(palette="dark2")+
+  scale_color_continuous_sequential(palette= "Heat 2")+
+  coord_sf(xlim = c(xmin,xmax), ylim=c(ymin,ymax))+
   labs(
-    fill= str_wrap("distância média ajustada (em km)",10) 
+    
+    color = str_wrap("distância em Km",10)
+  )+
+  theme_light() +
+  theme(
+    text = element_text(size=18),
+    panel.background = element_rect(fill = "black"),
+    panel.grid = element_blank(),
+    axis.title.x = element_blank(),
+    axis.title.y = element_blank(),
+    strip.background = element_rect(fill = "#505050"),
+    strip.text = element_text(color = "white"),
+    axis.text = element_blank(),
+
+  ) 
+
+muni_sel_foco<-
+  municipios_seat %>%
+  mutate(code_muni = str_sub(as.character(code_muni),1,6)) %>%
+  inner_join(
+      muni_sel%>%
+  filter(code_muni=="150553")
+  )
+
+
+
+muni_sel<-
+  muni_sel%>%
+  filter(code_muni!="150553")
+
+
+
+g2<-
+municipios_seat %>%
+  mutate(code_muni = str_sub(as.character(code_muni),1,6)) %>%
+  inner_join(
+    muni_sel
+  ) %>%
+  ggplot()+
+  geom_sf(data = estados_mapa, fill=NA, color="#505050")+
+  geom_sf( aes(fill=quantidade),pch=21, color="#444444", size=2.9)+
+  geom_sf( data= muni_sel_foco, aes(size=quantidade),pch=21, color="#444444", fill="white")+
+  geom_text_repel(data = muni_sel_repel,aes(x=X, y=Y, label= name_muni),fontface = "bold", color="white")+
+  scale_fill_continuous_sequential(palette= "Heat 2" )+
+  coord_sf(xlim = c(xmin,xmax), ylim=c(ymin,ymax))+
+  labs(
+    fill= str_wrap("Quantidade de entradas",15),
+    size= str_wrap("Quantidade de saídas",15)
+  )+
+  theme_light() +
+  theme(
+    text = element_text(size=18),
+    panel.background = element_rect(fill = "black"),
+    panel.grid = element_blank(),
+    axis.title.x = element_blank(),
+    axis.title.y = element_blank(),
+    strip.background = element_rect(fill = "#505050"),
+    strip.text = element_text(color = "white"),
+    axis.text = element_blank(),
+    legend.key = element_rect(fill = "black")
+
+  )
+
+
+g1|g2
+
+
+```
+
+```{r fig.width=20, fig.height=10, fig.dpi=500}
+
+muni_sel<- 
+  dataset_analise %>%
+  filter(deslocamento ==1,
+         codufmun==	"261160") %>%
+  group_by(codufmun,nome_nivel_hierarquia_ordenado.y, uf.y) %>%
+  summarise(quantidade = n()) %>%
+  rename(code_muni= codufmun,
+         hierarquia = nome_nivel_hierarquia_ordenado.y,
+         uf = uf.y) %>%
+  mutate(tipo_deslocamento  = "destino",
+         distancia = 0) %>%
+  bind_rows(
+    dataset_analise %>%
+      filter(deslocamento ==1,
+             codufmun==	"261160") %>%
+      group_by(munic_res,nome_nivel_hierarquia_ordenado.x, uf.x) %>%
+      summarise(
+        quantidade = n(),
+        distancia =min(distancia)
+      ) %>%
+      ungroup() %>%
+      rename(code_muni= munic_res,
+             hierarquia = nome_nivel_hierarquia_ordenado.x,
+             uf=uf.x)%>%
+      mutate(tipo_deslocamento  = "origem")
+  )
+
+
+
+muni_sel_posicao<-
+dataset_analise %>%
+dplyr::filter(deslocamento ==1,
+        codufmun==	"261160")%>%
+  distinct(codufmun, mun_res_lat.x, mun_res_lat.y, mun_res_lon.x, mun_res_lon.y,distancia)
+
+
+muni_sel_posicao<-
+  municipios_seat %>%
+  mutate(code_muni = str_sub(as.character(code_muni),1,6)) %>%
+  inner_join(
+    muni_sel_posicao %>%
+      rename(code_muni= codufmun)
+  )
+
+
+
+muni_sel_repel<-
+   municipios_seat %>%
+   mutate(code_muni = str_sub(as.character(code_muni),1,6)) %>%
+   filter(code_muni %in% c("260960", "260790","110150")) %>% #261160-Recife,260790 -Jaboatão, 260960 - Olinda, 260410 - Caruarau, 260545 - Fernando de Noronha, 110150 - Seringueiras-RO
+  inner_join(muni_sel)
+  
+
+  
+
+xmin<- min(min(muni_sel_posicao$mun_res_lon.x), min(muni_sel_posicao$mun_res_lon.y)) -1
+xmax <- max(max(muni_sel_posicao$mun_res_lon.x), max(muni_sel_posicao$mun_res_lon.y)) +1
+
+
+ymin<- min(min(muni_sel_posicao$mun_res_lat.x), min(muni_sel_posicao$mun_res_lat.y)) -1
+ymax <- max(max(muni_sel_posicao$mun_res_lat.x), max(muni_sel_posicao$mun_res_lat.y)) +1
+
+g1<-
+municipios_seat %>%
+  mutate(code_muni = str_sub(as.character(code_muni),1,6)) %>%
+  inner_join(
+    muni_sel
+  ) %>%
+  ggplot()+
+  geom_sf(data = estados_mapa, fill=NA, color="#505050")+
+  geom_curve(data=muni_sel_posicao, aes(x=mun_res_lon.x,y=mun_res_lat.x,xend=mun_res_lon.y,yend=mun_res_lat.y, colour= distancia),
+             curvature = -.25, ncp = 800,size = 1)+
+  geom_sf(fill="white",size=1.9,pch=21, color="#444444")+
+  scale_fill_discrete_qualitative(palette="dark2")+
+  scale_color_continuous_sequential(palette= "Heat 2")+
+  coord_sf(xlim = c(xmin,xmax), ylim=c(ymin,ymax))+
+  labs(
+    fill= "",
+    color = str_wrap("distância em Km",10)
+  )+
+  theme_light() +
+  theme(
+    text = element_text(size=18),
+    panel.background = element_rect(fill = "black"),
+    panel.grid = element_blank(),
+    axis.title.x = element_blank(),
+    axis.title.y = element_blank(),
+    strip.background = element_rect(fill = "#505050"),
+    strip.text = element_text(color = "white"),
+    axis.text = element_blank(),
+
+  ) 
+
+muni_sel_foco<-
+  municipios_seat %>%
+  mutate(code_muni = str_sub(as.character(code_muni),1,6)) %>%
+  inner_join(
+      muni_sel%>%
+  filter(code_muni=="261160")
+  )
+
+
+
+ muni_sel<-
+   muni_sel%>%
+   filter(code_muni!="261160")
+
+  
+set.seed(1972)
+
+g2<-
+municipios_seat %>%
+  mutate(code_muni = str_sub(as.character(code_muni),1,6)) %>%
+  inner_join(
+    muni_sel
+  ) %>%
+  ggplot()+
+  geom_sf(data = estados_mapa, fill=NA, color="#505050")+#505050
+  geom_sf( aes(fill=quantidade),pch=21, color="#444444", size=2, show.legend = TRUE)+
+  geom_sf( data= muni_sel_foco, aes(size=quantidade),pch=21, color="#444444", fill="white")+
+  geom_text_repel(data = muni_sel_repel,
+                  aes(x=X, y=Y, label= str_wrap(paste(name_muni,":",quantidade),10)), 
+                  color = "white", 
+                  limits = c(0,2352),
+                  fontface = "bold", 
+                  nudge_x = c(0,2,2.5), 
+                  nudge_y = c(0,-3.5,2),
+                  show.legend = TRUE)+
+  geom_text_repel(data = muni_sel_foco,
+                  aes(x=X, y=Y, label= str_wrap(name_muni,20)),
+                  fontface = "bold", 
+                  color="white",
+                  nudge_x = c(3), 
+                  nudge_y = c(0))+
+  scale_fill_continuous_sequential(palette= "Heat", trans= "log2" )+
+  coord_sf(xlim = c(xmin,xmax), ylim=c(ymin,ymax))+
+  labs(
+    
+    fill = str_wrap("Quantidade de saídas",15),
+    size= str_wrap("Quantidade de entradas",15)
   )+
   theme_light() +
   theme(
@@ -737,9 +981,22 @@ municipios_seat %>%
     strip.text = element_text(color = "white"),
     axis.text = element_blank(),
     legend.key = element_rect(fill = "#15202B")
-    
+
   )
 
+
+
+
+
+
+library(patchwork)
+
+g1|g2
+
+
+# cowplot::ggdraw()+
+#   cowplot::draw_plot(g1,0, 0, .3, 1)+
+#   cowplot::draw_plot(g2,.3, 0, .3, 1)+
+#   cowplot::draw_plot(g3,.6, 0, .3, 1)
+
 ```
-
-
