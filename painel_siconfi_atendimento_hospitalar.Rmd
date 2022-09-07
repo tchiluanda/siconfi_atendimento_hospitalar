@@ -1,0 +1,176 @@
+---
+title: "Untitled"
+output: 
+  flexdashboard::flex_dashboard:
+    orientation: columns
+    vertical_layout: fill
+runtime: shiny
+---
+
+```{r setup, include=FALSE}
+library(flexdashboard)
+library(shiny)
+library(tidyverse)
+library(geobr)
+library(readxl)
+library(basedosdados)
+library(viridis)
+library(sf)
+library(ggrepel)
+library(colorspace)
+library(patchwork)
+
+
+###Dados
+dataset_analise <- readRDS("dataset_analise.RDS")
+
+load("dados_auxiliares.RData")
+
+mun_sel_nivel_1A<-
+  municipios_seat %>%
+  inner_join(
+    REGIC_trabalho%>%
+      filter(nivel_hierarquia=="1A")%>%
+      mutate(code_muni = cod_cidade))
+
+mun_sel_nivel_1B<-
+  municipios_seat %>%
+  inner_join(
+    REGIC_trabalho%>%
+      filter(nivel_hierarquia=="1B")%>%
+      mutate(code_muni = cod_cidade))
+
+
+mun_sel_nivel_1C<-
+  municipios_seat %>%
+  inner_join(
+    REGIC_trabalho%>%
+      filter(nivel_hierarquia=="1C")%>%
+      mutate(code_muni = cod_cidade))
+
+
+mun_sel_nivel_2A<-
+  municipios_seat %>%
+  inner_join(
+    REGIC_trabalho%>%
+      filter(nivel_hierarquia=="2A")%>%
+      mutate(code_muni = cod_cidade))
+
+pop_municipios$pop_cut<- cut(pop_municipios$populacao, 
+                             breaks = c(0,
+                                        2000,
+                                        5000,
+                                        10000,
+                                        20000,
+                                        50000,
+                                        100000,
+                                        500000,
+                                        max(pop_municipios$populacao)), 
+                             labels= c("0-2.000",
+                                       "2.001-5.000",
+                                       "5.000-10.000",
+                                       "10.001-20.000",
+                                       "20.001-50.000",
+                                       "50.001-100.000",
+                                       "100.001-500.000",
+                                       ">500.000"))
+
+REGIC_trabalho$nome_nivel_hierarquia_ordenado<-
+factor(REGIC_trabalho$nome_nivel_hierarquia, levels = unique(REGIC_trabalho$nome_nivel_hierarquia[order(REGIC_trabalho$nivel_hierarquia)]))
+
+municipios_seat<- cbind(municipios_seat, st_coordinates(st_centroid(municipios_seat)))
+
+
+
+#### funções
+busca_municipio_regic<- function(){
+  sort(unique(dataset_analise$mun_res_nome.x))
+}
+
+
+```
+
+Distribuição de frequência
+=====================================  
+
+Inputs {.sidebar data-width=150} 
+-------------------------------------
+
+```{r}
+selectInput(inputId = "regic_mun", label= "Selecione um ou mais municipios", choices= busca_municipio_regic(),selected = busca_municipio_regic()[1], multiple = TRUE )
+checkboxInput("histograma","Usar histograma")
+checkboxInput("freeScale","Usar escala livre")
+```
+
+
+
+Column {data-width=650}
+-----------------------------------------------------------------------
+
+### Divisão REGIC
+
+```{r}
+
+renderPlot({
+  
+  muni_sel<-
+  municipios_seat %>%
+    filter(name_muni %in% input$regic_mun) %>%
+    inner_join(
+      pop_municipios%>%
+        mutate(code_muni= as.numeric(id_municipio))
+    )
+    
+
+  municipios_seat %>%
+  inner_join(
+    REGIC_trabalho %>%
+      mutate(code_muni = cod_cidade))%>%
+  inner_join(
+        pop_municipios %>%
+      mutate(code_muni = as.numeric(id_municipio))
+  ) %>%
+  ggplot()+
+  geom_sf(data = estados_mapa, fill=NA, color="#808080")+
+  geom_sf(aes( fill= pop_cut),pch=21, color="#444444", size=1, alpha=0.5)+
+  geom_sf(data= muni_sel, aes( fill= pop_cut),pch=21, color="#444444", size=1, alpha=1)+
+  geom_text_repel(data = mun_sel_nivel_1A,aes(x=X, y=Y, label= name_muni),fontface = "bold", color="white")+
+  geom_text_repel(data = mun_sel_nivel_1B,aes(x=X, y=Y, label= name_muni),fontface = "bold", color="white")+
+  geom_text_repel(data = mun_sel_nivel_1C,aes(x=X, y=Y, label= name_muni),fontface = "bold", color="white")+
+  geom_text_repel(data = mun_sel_nivel_2A,aes(x=X, y=Y, label= name_muni),fontface = "bold", color="white", force =2)+
+  geom_text_repel(data = muni_sel,aes(x=X, y=Y, label= name_muni),fontface = "bold", color="white")+
+  scale_fill_viridis(discrete = TRUE)+
+  labs(
+    fill= str_wrap("População (nº de habitantes)",20) 
+  )+
+  theme_light() +
+  theme(
+    panel.background = element_rect(fill = "#15202B"),
+    panel.grid = element_blank(),
+    axis.title.x = element_blank(),
+    axis.title.y = element_blank(),
+    strip.background = element_rect(fill = "#505050"),
+    strip.text = element_text(color = "white"),
+    axis.text = element_blank(),
+    legend.key = element_rect(fill = "#15202B")
+    
+  )+
+  facet_wrap(nome_nivel_hierarquia_ordenado~.)
+})
+```
+
+Column {data-width=350}
+-----------------------------------------------------------------------
+
+### Chart B
+
+```{r}
+
+```
+
+### Chart C
+
+```{r}
+
+```
+
