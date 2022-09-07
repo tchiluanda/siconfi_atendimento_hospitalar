@@ -26,6 +26,36 @@ dataset_analise <- readRDS("dataset_analise.RDS")
 
 load("dados_auxiliares.RData")
 
+
+pop_municipios$pop_cut<- cut(pop_municipios$populacao, 
+                             breaks = c(0,
+                                        2000,
+                                        5000,
+                                        10000,
+                                        20000,
+                                        50000,
+                                        100000,
+                                        500000,
+                                        max(pop_municipios$populacao)), 
+                             labels= c("0-2.000",
+                                       "2.001-5.000",
+                                       "5.000-10.000",
+                                       "10.001-20.000",
+                                       "20.001-50.000",
+                                       "50.001-100.000",
+                                       "100.001-500.000",
+                                       ">500.000"))
+
+municipios_seat<- cbind(municipios_seat, st_coordinates(st_centroid(municipios_seat)))
+
+municipios_seat<-
+municipios_seat %>%
+  inner_join(
+    pop_municipios %>%
+      mutate(code_muni=  as.numeric(id_municipio)) %>%
+      select(code_muni, populacao, pop_cut)
+  )
+
 mun_sel_nivel_1A<-
   municipios_seat %>%
   inner_join(
@@ -56,41 +86,34 @@ mun_sel_nivel_2A<-
       filter(nivel_hierarquia=="2A")%>%
       mutate(code_muni = cod_cidade))
 
-pop_municipios$pop_cut<- cut(pop_municipios$populacao, 
-                             breaks = c(0,
-                                        2000,
-                                        5000,
-                                        10000,
-                                        20000,
-                                        50000,
-                                        100000,
-                                        500000,
-                                        max(pop_municipios$populacao)), 
-                             labels= c("0-2.000",
-                                       "2.001-5.000",
-                                       "5.000-10.000",
-                                       "10.001-20.000",
-                                       "20.001-50.000",
-                                       "50.001-100.000",
-                                       "100.001-500.000",
-                                       ">500.000"))
+
 
 REGIC_trabalho$nome_nivel_hierarquia_ordenado<-
 factor(REGIC_trabalho$nome_nivel_hierarquia, levels = unique(REGIC_trabalho$nome_nivel_hierarquia[order(REGIC_trabalho$nivel_hierarquia)]))
 
-municipios_seat<- cbind(municipios_seat, st_coordinates(st_centroid(municipios_seat)))
+
 
 
 
 #### funções
 busca_municipio_regic<- function(){
-  sort(unique(dataset_analise$mun_res_nome.x))
+  
+  municipios<-
+  REGIC_trabalho %>%
+    inner_join(
+      municipios_seat %>%
+        mutate(cod_cidade= code_muni)
+      ) %>%
+    select(name_muni) %>%
+    arrange(name_muni)
+  
+  sort(unique(municipios$name_muni))
 }
 
 
 ```
 
-Distribuição de frequência
+REGIC
 =====================================  
 
 Inputs {.sidebar data-width=150} 
@@ -98,28 +121,37 @@ Inputs {.sidebar data-width=150}
 
 ```{r}
 selectInput(inputId = "regic_mun", label= "Selecione um ou mais municipios", choices= busca_municipio_regic(),selected = busca_municipio_regic()[1], multiple = TRUE )
-checkboxInput("histograma","Usar histograma")
-checkboxInput("freeScale","Usar escala livre")
 ```
 
 
-
-Column {data-width=650}
+Column {.tabset}
 -----------------------------------------------------------------------
 
-### Divisão REGIC
+### Mapa dinâmico da divisão do REGIC
 
 ```{r}
 
 renderPlot({
   
+  
+
   muni_sel<-
   municipios_seat %>%
     filter(name_muni %in% input$regic_mun) %>%
     inner_join(
       pop_municipios%>%
         mutate(code_muni= as.numeric(id_municipio))
+    ) %>%
+    inner_join(
+      REGIC_trabalho %>%
+        mutate(code_muni = cod_cidade)
     )
+    
+  
+  muni_sel<-
+    muni_sel %>%
+    filter(!(nivel_hierarquia %in% c("1A","1B","1C","2A")))
+
     
 
   municipios_seat %>%
@@ -132,13 +164,25 @@ renderPlot({
   ) %>%
   ggplot()+
   geom_sf(data = estados_mapa, fill=NA, color="#808080")+
-  geom_sf(aes( fill= pop_cut),pch=21, color="#444444", size=1, alpha=0.5)+
-  geom_sf(data= muni_sel, aes( fill= pop_cut),pch=21, color="#444444", size=1, alpha=1)+
+  geom_sf(aes( fill= pop_cut),pch=21, color="#444444", size=0.5, alpha=0.5)+
+  geom_sf(data= muni_sel, aes( fill= pop_cut),pch=21, color="white", size=2, alpha=1)+
+  geom_sf(data= mun_sel_nivel_1A, aes( fill= pop_cut),pch=21, color="#444444", size=2, alpha=1)+
+  geom_sf(data= mun_sel_nivel_1B, aes( fill= pop_cut),pch=21, color="#444444", size=2, alpha=1)+
+  geom_sf(data= mun_sel_nivel_1C, aes( fill= pop_cut),pch=21, color="#444444", size=2, alpha=1)+
+  geom_sf(data= mun_sel_nivel_2A, aes( fill= pop_cut),pch=21, color="#444444", size=2, alpha=1)+
   geom_text_repel(data = mun_sel_nivel_1A,aes(x=X, y=Y, label= name_muni),fontface = "bold", color="white")+
   geom_text_repel(data = mun_sel_nivel_1B,aes(x=X, y=Y, label= name_muni),fontface = "bold", color="white")+
   geom_text_repel(data = mun_sel_nivel_1C,aes(x=X, y=Y, label= name_muni),fontface = "bold", color="white")+
   geom_text_repel(data = mun_sel_nivel_2A,aes(x=X, y=Y, label= name_muni),fontface = "bold", color="white", force =2)+
-  geom_text_repel(data = muni_sel,aes(x=X, y=Y, label= name_muni),fontface = "bold", color="white")+
+  geom_text_repel(data = muni_sel,aes(x=X, y=Y, 
+                                      label= str_wrap(
+                                        str_c(name_muni,
+                                              round(populacao/1000,1), 
+                                              ifelse(populacao/1000<1000,"mil hab.","milhões hab."),
+                                              sep = " "
+                                              )
+                                        ,20)
+                                      ),fontface = "bold", color="white")+
   scale_fill_viridis(discrete = TRUE)+
   labs(
     fill= str_wrap("População (nº de habitantes)",20) 
@@ -159,18 +203,12 @@ renderPlot({
 })
 ```
 
-Column {data-width=350}
------------------------------------------------------------------------
 
-### Chart B
+### Tabela com raio-x dos municípios selecionados
 
 ```{r}
-
-```
-
-### Chart C
-
-```{r}
-
+DT::renderDataTable({
+  
+})
 ```
 

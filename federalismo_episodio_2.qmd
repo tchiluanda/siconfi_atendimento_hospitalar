@@ -59,7 +59,7 @@ mun_sel_nivel_2A<-
 
 ```
 
-## Quarto
+## Deslocamentos hospitalares e Regiões de Influência
 
 ```{r fig.width=4, fig.height=2, fig.align='left'}
 
@@ -197,36 +197,6 @@ factor(REGIC_trabalho$nome_nivel_hierarquia, levels = unique(REGIC_trabalho$nome
 municipios_seat<- cbind(municipios_seat, st_coordinates(st_centroid(municipios_seat)))
 
 
-# mun_sel_nivel_1A<- 
-#   municipios_seat %>%
-#   inner_join(
-#     REGIC_trabalho%>%
-#       filter(nivel_hierarquia=="1A")%>%
-#       mutate(code_muni = cod_cidade))
-# 
-# mun_sel_nivel_1B<- 
-#   municipios_seat %>%
-#   inner_join(
-#     REGIC_trabalho%>%
-#       filter(nivel_hierarquia=="1B")%>%
-#       mutate(code_muni = cod_cidade))
-# 
-# 
-# mun_sel_nivel_1C<- 
-#   municipios_seat %>%
-#   inner_join(
-#     REGIC_trabalho%>%
-#       filter(nivel_hierarquia=="1C")%>%
-#       mutate(code_muni = cod_cidade))
-#   
-# 
-# mun_sel_nivel_2A<- 
-#   municipios_seat %>%
-#   inner_join(
-#     REGIC_trabalho%>%
-#       filter(nivel_hierarquia=="2A")%>%
-#       mutate(code_muni = cod_cidade))
-
 
 
 municipios_seat %>%
@@ -264,6 +234,8 @@ municipios_seat %>%
   facet_wrap(nome_nivel_hierarquia_ordenado~.)
 
 ```
+
+## As regiões de influência: entradas e saídas
 
 ```{r fig.width=8, fig.height=4}
 
@@ -344,6 +316,8 @@ cowplot::ggdraw()+
   cowplot::draw_plot(g2,.5, 0, .5, 1)
 
 ```
+
+
 
 ```{r fig.width=20, fig.height=10, fig.dpi=500}
 
@@ -585,6 +559,8 @@ aluvial$entrada <- factor(aluvial$entrada, levels = unique(ordem_y$nome_nivel_hi
  
  parcats::parcats(p, data_input = aluvial,marginal_histograms = FALSE)
 ```
+
+## Distâncias percorridas
 
 ```{r fig.width=20, fig.height=10, fig.dpi=500}
 
@@ -829,10 +805,12 @@ g1|g2
 
 ```{r fig.width=20, fig.height=10, fig.dpi=500}
 
+municipio_selecionado<-"261160"
+
 muni_sel<- 
   dataset_analise %>%
   filter(deslocamento ==1,
-         codufmun==	"261160") %>%
+         codufmun==	municipio_selecionado) %>%
   group_by(codufmun,nome_nivel_hierarquia_ordenado.y, uf.y) %>%
   summarise(quantidade = n()) %>%
   rename(code_muni= codufmun,
@@ -843,7 +821,7 @@ muni_sel<-
   bind_rows(
     dataset_analise %>%
       filter(deslocamento ==1,
-             codufmun==	"261160") %>%
+             codufmun==	municipio_selecionado) %>%
       group_by(munic_res,nome_nivel_hierarquia_ordenado.x, uf.x) %>%
       summarise(
         quantidade = n(),
@@ -861,7 +839,7 @@ muni_sel<-
 muni_sel_posicao<-
 dataset_analise %>%
 dplyr::filter(deslocamento ==1,
-        codufmun==	"261160")%>%
+        codufmun==	municipio_selecionado)%>%
   distinct(codufmun, mun_res_lat.x, mun_res_lat.y, mun_res_lon.x, mun_res_lon.y,distancia)
 
 
@@ -927,14 +905,14 @@ muni_sel_foco<-
   mutate(code_muni = str_sub(as.character(code_muni),1,6)) %>%
   inner_join(
       muni_sel%>%
-  filter(code_muni=="261160")
+  filter(code_muni==municipio_selecionado)
   )
 
 
 
  muni_sel<-
    muni_sel%>%
-   filter(code_muni!="261160")
+   filter(code_muni!=municipio_selecionado)
 
   
 set.seed(1972)
@@ -993,10 +971,307 @@ library(patchwork)
 
 g1|g2
 
+```
 
-# cowplot::ggdraw()+
-#   cowplot::draw_plot(g1,0, 0, .3, 1)+
-#   cowplot::draw_plot(g2,.3, 0, .3, 1)+
-#   cowplot::draw_plot(g3,.6, 0, .3, 1)
+```{r fig.width=20, fig.height=10, fig.dpi=500}
+municipio_selecionado<-"350550"
+
+muni_sel<- 
+  dataset_analise %>%
+  filter(deslocamento ==1,
+         codufmun==	municipio_selecionado) %>%
+  group_by(codufmun,nome_nivel_hierarquia_ordenado.y, uf.y) %>%
+  summarise(quantidade = n()) %>%
+  rename(code_muni= codufmun,
+         hierarquia = nome_nivel_hierarquia_ordenado.y,
+         uf = uf.y) %>%
+  mutate(tipo_deslocamento  = "destino",
+         distancia = 0) %>%
+  bind_rows(
+    dataset_analise %>%
+      filter(deslocamento ==1,
+             codufmun==	municipio_selecionado) %>%
+      group_by(munic_res,nome_nivel_hierarquia_ordenado.x, uf.x) %>%
+      summarise(
+        quantidade = n(),
+        distancia =min(distancia)
+      ) %>%
+      ungroup() %>%
+      rename(code_muni= munic_res,
+             hierarquia = nome_nivel_hierarquia_ordenado.x,
+             uf=uf.x)%>%
+      mutate(tipo_deslocamento  = "origem")
+  )
+
+
+
+muni_sel_posicao<-
+dataset_analise %>%
+dplyr::filter(deslocamento ==1,
+        codufmun==	municipio_selecionado)%>%
+  distinct(codufmun, mun_res_lat.x, mun_res_lat.y, mun_res_lon.x, mun_res_lon.y,distancia)
+
+
+muni_sel_posicao<-
+  municipios_seat %>%
+  mutate(code_muni = str_sub(as.character(code_muni),1,6)) %>%
+  inner_join(
+    muni_sel_posicao %>%
+      rename(code_muni= codufmun)
+  )
+
+
+
+muni_sel_repel<-
+   municipios_seat %>%
+   mutate(code_muni = str_sub(as.character(code_muni),1,6)) %>%
+   filter(code_muni %in% c("350610", "351740","522050")) %>%
+  inner_join(muni_sel)
+  
+
+  
+
+xmin<- min(min(muni_sel_posicao$mun_res_lon.x), min(muni_sel_posicao$mun_res_lon.y)) -1
+xmax <- max(max(muni_sel_posicao$mun_res_lon.x), max(muni_sel_posicao$mun_res_lon.y)) +1
+
+
+ymin<- min(min(muni_sel_posicao$mun_res_lat.x), min(muni_sel_posicao$mun_res_lat.y)) -1
+ymax <- max(max(muni_sel_posicao$mun_res_lat.x), max(muni_sel_posicao$mun_res_lat.y)) +1
+
+g1<-
+municipios_seat %>%
+  mutate(code_muni = str_sub(as.character(code_muni),1,6)) %>%
+  inner_join(
+    muni_sel
+  ) %>%
+  ggplot()+
+  geom_sf(data = estados_mapa, fill=NA, color="#505050")+
+  geom_curve(data=muni_sel_posicao, aes(x=mun_res_lon.x,y=mun_res_lat.x,xend=mun_res_lon.y,yend=mun_res_lat.y, colour= distancia),
+             curvature = -.25, ncp = 800,size = 1)+
+  geom_sf(fill="white",size=1.9,pch=21, color="#444444")+
+  scale_fill_discrete_qualitative(palette="dark2")+
+  scale_color_continuous_sequential(palette= "Heat 2")+
+  coord_sf(xlim = c(xmin,xmax), ylim=c(ymin,ymax))+
+  labs(
+    fill= "",
+    color = str_wrap("distância em Km",10)
+  )+
+  theme_light() +
+  theme(
+    text = element_text(size=18),
+    panel.background = element_rect(fill = "black"),
+    panel.grid = element_blank(),
+    axis.title.x = element_blank(),
+    axis.title.y = element_blank(),
+    strip.background = element_rect(fill = "#505050"),
+    strip.text = element_text(color = "white"),
+    axis.text = element_blank(),
+
+  ) 
+
+muni_sel_foco<-
+  municipios_seat %>%
+  mutate(code_muni = str_sub(as.character(code_muni),1,6)) %>%
+  inner_join(
+      muni_sel%>%
+  filter(code_muni==municipio_selecionado)
+  )
+
+
+
+ muni_sel<-
+   muni_sel%>%
+   filter(code_muni!=municipio_selecionado)
+
+  
+set.seed(1972)
+
+g2<-
+municipios_seat %>%
+  mutate(code_muni = str_sub(as.character(code_muni),1,6)) %>%
+  inner_join(
+    muni_sel
+  ) %>%
+  ggplot()+
+  geom_sf(data = estados_mapa, fill=NA, color="#505050")+#505050
+  geom_sf( aes(fill=quantidade),pch=21, color="#444444", size=2, show.legend = TRUE)+
+  geom_sf( data= muni_sel_foco, aes(size=quantidade),pch=21, color="#444444", fill="white")+
+  geom_text_repel(data = muni_sel_repel,
+                  aes(x=X, y=Y, label= str_wrap(paste(name_muni,":",quantidade),10)),
+                  color = "white",
+                  segment.size = 1,
+                  limits = c(0,2352),
+                  fontface = "bold",
+                  nudge_x = c(-15,2,-5),
+                  nudge_y = c(0,-5.5,0),
+                  show.legend = TRUE)+
+  geom_text_repel(data = muni_sel_foco,
+                  aes(x=X, y=Y, label= str_wrap(name_muni,20)),
+                  fontface = "bold",
+                  color="white",
+                  segment.size = 1,
+                  nudge_x = c(6),
+                  nudge_y = c(0))+
+  scale_fill_continuous_sequential(palette= "Heat", trans= "log2" )+
+  coord_sf(xlim = c(xmin,xmax), ylim=c(ymin,ymax))+
+  labs(
+    
+    fill = str_wrap("Quantidade de saídas",15),
+    size= str_wrap("Quantidade de entradas",15)
+  )+
+  theme_light() +
+  theme(
+    text = element_text(size=18),
+    panel.background = element_rect(fill = "black"),
+    panel.grid = element_blank(),
+    axis.title.x = element_blank(),
+    axis.title.y = element_blank(),
+    strip.background = element_rect(fill = "#505050"),
+    strip.text = element_text(color = "white"),
+    axis.text = element_blank(),
+    legend.key = element_rect(fill = "#15202B")
+
+  )
+
+
+
+
+
+
+library(patchwork)
+
+g1|g2
+```
+
+## Chegadas, partidas e as relações com gastos Hospitalares e Ambulatoriais
+
+```{r fig.width=20, fig.height=10, fig.dpi=500}
+agrupamento_municipio_cluster<-readRDS("agrupamento_municipio.RDS")
+
+g1<-
+dataset_analise %>%
+  filter(deslocamento == 1,
+         perc.x>0,
+         perc.x<=50) %>% 
+  distinct(nome_nivel_hierarquia.x,munic_res, perc.x) %>%
+  inner_join(
+    agrupamento_municipio_cluster %>%
+      rename(munic_res=code_muni)
+  ) %>%
+  ggplot() +
+  geom_jitter(aes(x=cluster_4_k, y=perc.x, fill=perc_saida), pch=21, color="#444444",size=2)+
+  geom_boxplot(aes(x=cluster_4_k, y=perc.x),fill=NA, color= "white", outlier.shape = NA)+
+  scale_fill_continuous_sequential(palette= "Red-Yellow")+
+  theme_light() +
+  theme(
+    text = element_text(size=18),
+    panel.background = element_rect(fill = "black"),
+    panel.grid = element_blank(),
+    axis.title.x = element_blank(),
+    strip.background = element_rect(fill = "#505050"),
+    strip.text = element_text(color = "white"),
+    #axis.text = element_blank(),
+    axis.text.x = element_text(angle = 45, vjust = 0.5),
+    legend.key = element_rect(fill = "#15202B")
+
+  )+
+  labs(
+    fill= "(%) saída",
+    y = "Gastos Hospitalares e ambulatoriais - (%) do total"
+  )
+
+
+g2<-
+dataset_analise %>%
+  filter(deslocamento == 1,
+         perc.y>0,
+         perc.y<=50) %>%
+  distinct(nome_nivel_hierarquia.y,codufmun, perc.y) %>%
+  inner_join(
+    agrupamento_municipio_cluster %>%
+      rename(codufmun=code_muni)
+  ) %>%
+  ggplot() +
+  geom_jitter(aes(x=cluster_4_k, y=perc.y, fill=perc_entrada), pch=21, color="#444444",size=2)+
+  geom_boxplot(aes(x=cluster_4_k, y=perc.y),fill=NA, color= "white", outlier.shape = NA)+
+  scale_fill_continuous_sequential(palette= "Red-Yellow")+
+  theme_light() +
+  theme(
+    text = element_text(size=18),
+    panel.background = element_rect(fill = "black"),
+    panel.grid = element_blank(),
+    axis.title.x = element_blank(),
+    strip.background = element_rect(fill = "#505050"),
+    strip.text = element_text(color = "white"),
+    axis.text.x = element_text(angle = 45, vjust = 0.5),
+    legend.key = element_rect(fill = "#15202B")
+
+  )+
+  labs(
+    fill= "(%) entrada",
+    y = "Gastos Hospitalares e ambulatoriais - (%) do total"
+  )
+
+g1|g2
 
 ```
+
+
+
+
+
+```{r fig.width=20, fig.height=10, fig.dpi=500}
+dataset_analise %>%
+  filter(deslocamento == 1,
+         perc.x>0,
+         perc.x<=50,
+         !is.na(nome_nivel_hierarquia.x)) %>% #filtro para tirar os outliers
+  distinct(nome_nivel_hierarquia_ordenado.x,munic_res, perc.x) %>%
+  inner_join(
+    agrupamento_municipio_cluster %>%
+      rename(munic_res=code_muni) 
+  ) %>%
+  mutate(tipo_analise = "Saída",
+         hierarquia=nome_nivel_hierarquia_ordenado.x,
+         percentual = perc.x) %>%
+  bind_rows(
+    dataset_analise %>%
+      filter(deslocamento == 1,
+             perc.y>0,
+             perc.y<=50,
+             !is.na(nome_nivel_hierarquia.y)) %>% #filtro para tirar os outliers
+      distinct(nome_nivel_hierarquia_ordenado.y,codufmun, perc.y) %>%
+      inner_join(
+        agrupamento_municipio_cluster %>%
+          rename(codufmun=code_muni) 
+      ) %>%
+      mutate(tipo_analise = "Entrada",
+             hierarquia=nome_nivel_hierarquia_ordenado.y,
+             percentual = perc.y)
+  )%>%
+  ggplot() +
+  #geom_jitter(aes(x=nome_nivel_hierarquia_ordenado.x, y=perc.x, fill=perc_saida), pch=21, color="#444444",size=2)+
+  geom_jitter(aes(x=hierarquia, y=percentual, fill=cluster_4_k), pch=21, color="#444444",size=2)+
+  geom_boxplot(aes(x=hierarquia, y=percentual),fill=NA, color= "white", outlier.shape = NA)+
+  #scale_fill_discrete_qualitative(palette = "Dark 3", rev=TRUE)+ 
+  scale_fill_discrete_divergingx(palette= "Zissou 1")+
+  #scale_fill_discrete_sequential(palette= "Reds 3")+
+  theme_light() +
+  theme(
+    text = element_text(size=18),
+    panel.background = element_rect(fill = "black"),
+    panel.grid = element_blank(),
+    axis.title.x = element_blank(),
+    strip.background = element_rect(fill = "#505050"),
+    strip.text = element_text(color = "white"),
+    axis.text.x = element_text(angle = 45, vjust = 0.5),
+
+  )+
+  labs(
+    fill= str_wrap("Tipo agrupamento",15),
+    y = "Gastos Hospitalares e ambulatoriais - (%) do total"
+  )+
+  facet_grid(tipo_analise~.)
+```
+
+### Análise específica para os arranjos populacionais
