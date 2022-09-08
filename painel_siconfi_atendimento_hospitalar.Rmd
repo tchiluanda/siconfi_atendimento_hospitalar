@@ -56,6 +56,77 @@ municipios_seat %>%
       select(code_muni, populacao, pop_cut)
   )
 
+
+
+
+
+REGIC_trabalho$nome_nivel_hierarquia_ordenado<-
+factor(REGIC_trabalho$nome_nivel_hierarquia, levels = unique(REGIC_trabalho$nome_nivel_hierarquia[order(REGIC_trabalho$nivel_hierarquia)]))
+
+
+agrupamento_municipio<-
+    dataset_analise %>%
+      filter(
+             deslocamento ==1) %>%
+      group_by(munic_res) %>%
+      summarise(
+        numero_internacoes = n()
+      ) %>%
+      mutate(code_muni = munic_res,
+             tipo_deslocamento = "saida" ) %>%
+      bind_rows(
+        dataset_analise %>%
+          filter(
+                 deslocamento ==1) %>%
+          group_by(codufmun) %>%
+          summarise(
+            numero_internacoes = n()
+          ) %>%
+          mutate(code_muni = codufmun,
+                 tipo_deslocamento = "entrada"),
+        dataset_analise %>%
+          filter(
+                 deslocamento ==0) %>%
+          group_by(codufmun) %>%
+          summarise(
+            numero_internacoes = n()
+          ) %>%
+          mutate(code_muni = codufmun,
+                 tipo_deslocamento = "local")
+      ) %>%
+  group_by(code_muni, tipo_deslocamento) %>%
+  summarise(
+    total_internacoes = sum(numero_internacoes)
+  ) %>%
+  ungroup()
+
+agrupamento_municipio<-
+agrupamento_municipio %>%
+  tidyr::pivot_wider(names_from = tipo_deslocamento, values_from = total_internacoes) %>%
+  mutate(liquido = ifelse(is.na(entrada),0,entrada)+
+           ifelse(is.na(local),0,local)-
+           ifelse(is.na(saida),0,saida))
+
+agrupamento_municipio<-
+agrupamento_municipio %>%
+  mutate(local = ifelse(is.na(local),0,local),
+         saida = ifelse(is.na(saida),0,saida),
+         entrada = ifelse(is.na(entrada),0,entrada),
+         perc_saida = saida/(saida+local)*100,
+         perc_entrada = entrada/(entrada+local)*100,
+         perc_entrada = ifelse(is.nan(perc_entrada),0,perc_entrada))
+
+
+
+municipios_seat<-
+municipios_seat %>%
+  mutate(code_muni_reduzido = as.character(code_muni),
+         code_muni_reduzido = str_sub(code_muni,1,6)) %>%
+  inner_join(
+    agrupamento_municipio%>%
+      rename(code_muni_reduzido = code_muni))
+
+
 mun_sel_nivel_1A<-
   municipios_seat %>%
   inner_join(
@@ -86,15 +157,6 @@ mun_sel_nivel_2A<-
       filter(nivel_hierarquia=="2A")%>%
       mutate(code_muni = cod_cidade))
 
-
-
-REGIC_trabalho$nome_nivel_hierarquia_ordenado<-
-factor(REGIC_trabalho$nome_nivel_hierarquia, levels = unique(REGIC_trabalho$nome_nivel_hierarquia[order(REGIC_trabalho$nivel_hierarquia)]))
-
-
-
-
-
 #### funções
 busca_municipio_regic<- function(){
   
@@ -110,6 +172,80 @@ busca_municipio_regic<- function(){
   sort(unique(municipios$name_muni))
 }
 
+
+plot_mapa_entrada_saida <- function (tipo_es, mun_es){
+  
+  muni_sel<-
+    municipios_seat %>%
+    filter(name_muni %in% mun_es) %>%
+    inner_join(
+      REGIC_trabalho %>%
+        mutate(code_muni = cod_cidade)
+    )
+  
+  
+  # muni_sel<-
+  #   muni_sel %>%
+  #   filter(!(nivel_hierarquia %in% c("1A","1B","1C","2A")))
+  
+  
+  if (tipo_es=="e"){
+    texto_legenda <- "% de pacientes internados de outros municípios"
+    var_fill<- "perc_entrada"
+    
+  } else {
+    texto_legenda <- "% de pacientes internados em outros municípios"
+    var_fill<- "perc_saida"
+  }
+  
+  
+  
+  municipios_seat %>%
+    mutate(code_muni = str_sub(as.character(code_muni),1,6)) %>%
+    inner_join(
+      REGIC_trabalho%>%
+        mutate(code_muni = str_sub(as.character(cod_cidade),1,6))
+    ) %>%
+    ggplot()+
+    geom_sf(data = estados_mapa, fill=NA, color="#808080")+
+    geom_sf(aes( fill= !!sym(var_fill)),pch=21, color="#444444", size=0.8, alpha=0.6)+
+    geom_sf(data= mun_sel_nivel_1A, aes( fill= !!sym(var_fill)),pch=21, color="#444444", size=1, alpha=1)+
+    geom_sf(data= mun_sel_nivel_1B, aes( fill= !!sym(var_fill)),pch=21, color="#444444", size=1, alpha=1)+
+    geom_sf(data= mun_sel_nivel_1C, aes( fill= !!sym(var_fill)),pch=21, color="#444444", size=1, alpha=1)+
+    geom_sf(data= mun_sel_nivel_2A, aes( fill= !!sym(var_fill)),pch=21, color="#444444", size=1, alpha=1)+
+    geom_sf(data= muni_sel, aes( fill= !!sym(var_fill)),pch=21, color="white", size=1, alpha=1)+
+    # geom_text_repel(data = mun_sel_nivel_1A,aes(x=X, y=Y, label= name_muni),fontface = "bold", color="white",size=2.5)+
+    # geom_text_repel(data = mun_sel_nivel_1B,aes(x=X, y=Y, label= name_muni),fontface = "bold", color="white",size=2.5)+
+    # geom_text_repel(data = mun_sel_nivel_1C,aes(x=X, y=Y, label= name_muni),fontface = "bold", color="white",size=2.5)+
+    # geom_text_repel(data = mun_sel_nivel_2A,aes(x=X, y=Y, label= name_muni),fontface = "bold", color="white", force =2,size=2.5)+
+    geom_text_repel(data = muni_sel,aes(x=X, y=Y,
+                                        label= str_wrap(
+                                          str_c(name_muni,
+                                                round(!!sym(var_fill),2),
+                                                "%",
+                                                sep = " "
+                                          )
+                                          ,20)
+    ),fontface = "bold", color="white")+
+    scale_fill_continuous_sequential(palette= "Heat 2")+
+    scale_color_continuous_sequential(palette= "Heat 2")+
+    labs(
+      fill= str_wrap(texto_legenda,15) 
+    )+
+    theme_light() +
+    theme(
+      panel.background = element_rect(fill = "black"),
+      panel.grid = element_blank(),
+      axis.title.x = element_blank(),
+      axis.title.y = element_blank(),
+      strip.background = element_rect(fill = "#505050"),
+      strip.text = element_text(color = "white"),
+      axis.text = element_blank()
+    )+
+    facet_wrap(nome_nivel_hierarquia_ordenado~.)
+  
+  
+}
 
 ```
 
@@ -212,3 +348,48 @@ DT::renderDataTable({
 })
 ```
 
+
+Panorama de saída e entrada de pacientes
+=====================================  
+
+Inputs {.sidebar data-width=150} 
+-------------------------------------
+
+```{r}
+selectInput(inputId = "regic_mun_io", label= "Selecione um ou mais municipios", choices= busca_municipio_regic(),selected = busca_municipio_regic()[1], multiple = TRUE )
+```
+
+
+Column
+-----------------------------------------------------------------------
+
+
+### Saída de pacientes para outros municípios
+
+
+```{r}
+  
+renderPlot({
+  
+  plot_mapa_entrada_saida("s",input$regic_mun_io)
+  
+})
+
+
+```
+
+
+Column
+-----------------------------------------------------------------------
+
+
+### Entrada de pacientes de outros municípios
+
+
+```{r}
+  
+renderPlot({
+  plot_mapa_entrada_saida("e",input$regic_mun_io)
+})
+
+```

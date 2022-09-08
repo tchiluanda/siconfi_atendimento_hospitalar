@@ -390,7 +390,7 @@ municipios_seat %>%
   geom_text_repel(data = mun_sel_nivel_2A,aes(x=X, y=Y, label= name_muni),fontface = "bold", color="white", force =2)+
   scale_fill_continuous_sequential(palette= "Heat 2")+
   labs(
-    fill= str_wrap("% de internações de saída",15) 
+    fill= str_wrap("% de saída de pacientes",15) 
   )+
   theme_light() +
   theme(
