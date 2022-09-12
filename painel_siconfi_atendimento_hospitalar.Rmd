@@ -824,3 +824,134 @@ renderPlot({
 
 
 ```
+
+Gastos hospitalares
+=====================================  
+
+Inputs {.sidebar data-width=150} 
+-------------------------------------
+
+```{r}
+selectInput(inputId = "regic_mun_gasto", label= "Selecione um ou mais municipios", choices= busca_municipio_regic(),selected = "Recife", multiple = TRUE )
+
+
+```
+
+
+Column {.tabset}
+-----------------------------------------------------------------------
+
+
+### Gastos sem análise REGIC
+
+
+
+```{r}
+
+renderPlot({
+  
+agrupamento_municipio_cluster<-readRDS("agrupamento_municipio.RDS")
+
+codigo_muni<-
+    unique(dataset_analise$codufmun[dataset_analise$mun_res_nome.y %in% input$regic_mun_gasto])
+
+muni_sel_saida<-
+dataset_analise %>%
+  filter(deslocamento == 1,
+         perc.x>0,
+         perc.x<=50) %>% 
+  distinct(nome_nivel_hierarquia.x,munic_res, perc.x, mun_res_nome.x) %>%
+  inner_join(
+    agrupamento_municipio_cluster %>%
+      filter(code_muni %in% codigo_muni) %>%
+      rename(munic_res=code_muni)
+  )  
+
+g1<-
+dataset_analise %>%
+  filter(deslocamento == 1,
+         perc.x>0,
+         perc.x<=50) %>% 
+  distinct(nome_nivel_hierarquia.x,munic_res, perc.x) %>%
+  inner_join(
+    agrupamento_municipio_cluster %>%
+      rename(munic_res=code_muni)
+  ) %>%
+  ggplot() +
+  geom_jitter(aes(x=cluster_4_k, y=perc.x, fill=perc_saida), pch=21, color="#444444",size=2)+
+  geom_point(data= muni_sel_saida, aes(x=cluster_4_k, y=perc.x, fill=perc_saida), pch=21, color="white",size=4)+
+  geom_text_repel(data= muni_sel_saida, aes(x=cluster_4_k, y=perc.x,label= mun_res_nome.x),color="white")+
+  geom_boxplot(aes(x=cluster_4_k, y=perc.x),fill=NA, color= "white", outlier.shape = NA)+
+  scale_fill_continuous_sequential(palette= "Red-Yellow")+
+  theme_light() +
+  theme(
+    text = element_text(size=18),
+    panel.background = element_rect(fill = "black"),
+    panel.grid = element_blank(),
+    axis.title.x = element_blank(),
+    strip.background = element_rect(fill = "#505050"),
+    strip.text = element_text(color = "white"),
+    #axis.text = element_blank(),
+    axis.text.x = element_text(angle = 45, vjust = 0.5),
+    legend.key = element_rect(fill = "#15202B")
+
+  )+
+  labs(
+    fill= "(%) saída",
+    y = "Gastos Hospitalares e ambulatoriais - (%) do total"
+  )
+
+
+muni_sel_entrada<-
+dataset_analise %>%
+  filter(deslocamento == 1,
+         perc.y>0,
+         perc.y<=50) %>% 
+  distinct(nome_nivel_hierarquia.y,codufmun, perc.y, mun_res_nome.y) %>%
+  inner_join(
+    agrupamento_municipio_cluster %>%
+      filter(code_muni %in% codigo_muni) %>%
+      rename(codufmun=code_muni)
+  )  
+
+print(muni_sel_entrada)
+
+g2<-
+dataset_analise %>%
+  filter(deslocamento == 1,
+         perc.y>0,
+         perc.y<=50) %>%
+  distinct(nome_nivel_hierarquia.y,codufmun, perc.y) %>%
+  inner_join(
+    agrupamento_municipio_cluster %>%
+      rename(codufmun=code_muni)
+  ) %>%
+  ggplot() +
+  geom_jitter(aes(x=cluster_4_k, y=perc.y, fill=perc_entrada), pch=21, color="#444444",size=2)+
+  geom_point(data= muni_sel_entrada, aes(x=cluster_4_k, y=perc.y, fill=perc_entrada), pch=21, color="white",size=4, )+
+  geom_boxplot(aes(x=cluster_4_k, y=perc.y),fill=NA, color= "white", outlier.shape = NA)+
+  geom_text_repel(data= muni_sel_entrada, aes(x=cluster_4_k, y=perc.y,label= mun_res_nome.y), color="white", fontface = "bold",)+
+  scale_fill_continuous_sequential(palette= "Red-Yellow")+
+  theme_light() +
+  theme(
+    text = element_text(size=18),
+    panel.background = element_rect(fill = "black"),
+    panel.grid = element_blank(),
+    axis.title.x = element_blank(),
+    strip.background = element_rect(fill = "#505050"),
+    strip.text = element_text(color = "white"),
+    axis.text.x = element_text(angle = 45, vjust = 0.5),
+    legend.key = element_rect(fill = "#15202B")
+
+  )+
+  labs(
+    fill= "(%) entrada",
+    y = "Gastos Hospitalares e ambulatoriais - (%) do total"
+  )
+
+g1|g2
+
+})
+
+```
+
