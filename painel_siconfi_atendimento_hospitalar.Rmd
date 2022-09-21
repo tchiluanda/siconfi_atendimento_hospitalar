@@ -1,5 +1,5 @@
 ---
-title: "Untitled"
+title: "Painel de gastos hospitalares"
 output: 
   flexdashboard::flex_dashboard:
     orientation: columns
@@ -24,7 +24,9 @@ library(plotly)
 
 
 ###Dados
-dataset_analise <- readRDS("dataset_analise.RDS")
+dataset_analise <- readRDS("dataset_analise_2020.RDS")
+
+agrupamento_municipio_cluster<-readRDS("agrupamento_municipio_2020.RDS")
 
 load("dados_auxiliares.RData")
 
@@ -850,7 +852,7 @@ Column {.tabset}
 
 renderPlot({
   
-agrupamento_municipio_cluster<-readRDS("agrupamento_municipio.RDS")
+#agrupamento_municipio_cluster<-readRDS("agrupamento_municipio.RDS")
 
 codigo_muni<-
     unique(dataset_analise$codufmun[dataset_analise$mun_res_nome.y %in% input$regic_mun_gasto])
@@ -858,7 +860,7 @@ codigo_muni<-
 muni_sel_saida<-
 dataset_analise %>%
   filter(deslocamento == 1,
-         perc.x>0,
+         perc.x>=0,
          perc.x<=50) %>% 
   distinct(nome_nivel_hierarquia.x,munic_res, perc.x, mun_res_nome.x) %>%
   inner_join(
@@ -879,9 +881,9 @@ dataset_analise %>%
   ) %>%
   ggplot() +
   geom_jitter(aes(x=cluster_4_k, y=perc.x, fill=perc_saida), pch=21, color="#444444",size=2)+
-  geom_point(data= muni_sel_saida, aes(x=cluster_4_k, y=perc.x, fill=perc_saida), pch=21, color="white",size=4)+
-  geom_text_repel(data= muni_sel_saida, aes(x=cluster_4_k, y=perc.x,label= mun_res_nome.x),color="white")+
   geom_boxplot(aes(x=cluster_4_k, y=perc.x),fill=NA, color= "white", outlier.shape = NA)+
+  geom_point(data= muni_sel_saida, aes(x=cluster_4_k, y=perc.x, fill=perc_saida), pch=21, color="white",size=4)+
+  geom_label_repel(data= muni_sel_saida, aes(x=cluster_4_k, y=perc.x,label= mun_res_nome.x),color="black", force_pull = 0)+
   scale_fill_continuous_sequential(palette= "Red-Yellow")+
   theme_light() +
   theme(
@@ -905,7 +907,7 @@ dataset_analise %>%
 muni_sel_entrada<-
 dataset_analise %>%
   filter(deslocamento == 1,
-         perc.y>0,
+         perc.y>=0,
          perc.y<=50) %>% 
   distinct(nome_nivel_hierarquia.y,codufmun, perc.y, mun_res_nome.y) %>%
   inner_join(
@@ -928,9 +930,9 @@ dataset_analise %>%
   ) %>%
   ggplot() +
   geom_jitter(aes(x=cluster_4_k, y=perc.y, fill=perc_entrada), pch=21, color="#444444",size=2)+
-  geom_point(data= muni_sel_entrada, aes(x=cluster_4_k, y=perc.y, fill=perc_entrada), pch=21, color="white",size=4, )+
   geom_boxplot(aes(x=cluster_4_k, y=perc.y),fill=NA, color= "white", outlier.shape = NA)+
-  geom_text_repel(data= muni_sel_entrada, aes(x=cluster_4_k, y=perc.y,label= mun_res_nome.y), color="white", fontface = "bold",)+
+  geom_point(data= muni_sel_entrada, aes(x=cluster_4_k, y=perc.y, fill=perc_entrada), pch=21, color="white",size=4, )+
+  geom_label_repel(data= muni_sel_entrada, aes(x=cluster_4_k, y=perc.y,label= mun_res_nome.y), color="black", fontface = "bold", force_pull = 0)+
   scale_fill_continuous_sequential(palette= "Red-Yellow")+
   theme_light() +
   theme(
@@ -953,5 +955,131 @@ g1|g2
 
 })
 
+```
+
+
+### Gastos com análise REGIC
+
+```{r}
+
+renderPlot({
+  
+  
+codigo_muni<-
+    unique(dataset_analise$codufmun[dataset_analise$mun_res_nome.y %in% input$regic_mun_gasto])
+
+  
+#   muni_sel_entrada<-
+# dataset_analise %>%
+#   filter(deslocamento == 1,
+#          perc.y>=0,
+#          perc.y<=50) %>% 
+#   distinct(nome_nivel_hierarquia.y,codufmun, perc.y, mun_res_nome.y) %>%
+#   inner_join(
+#     agrupamento_municipio_cluster %>%
+#       filter(code_muni %in% codigo_muni) %>%
+#       rename(codufmun=code_muni)
+#   )  
+
+#   muni_sel_saida<-
+# dataset_analise %>%
+#   filter(deslocamento == 1,
+#          perc.x>=0,
+#          perc.x<=50) %>% 
+#   distinct(nome_nivel_hierarquia.x,munic_res, perc.x, mun_res_nome.x) %>%
+#   inner_join(
+#     agrupamento_municipio_cluster %>%
+#       filter(code_muni %in% codigo_muni) %>%
+#       rename(munic_res=code_muni)
+#   )  
+  
+  muni_sel_saida<-
+    dataset_analise %>%
+  filter(deslocamento == 1,
+         perc.x>=0,
+         perc.x<=50,
+         !is.na(nome_nivel_hierarquia.x)) %>% #filtro para tirar os outliers
+  distinct(nome_nivel_hierarquia_ordenado.x,munic_res, perc.x, mun_res_nome.x) %>%
+  inner_join(
+    agrupamento_municipio_cluster %>%
+        filter(code_muni %in% codigo_muni) %>%
+      rename(munic_res=code_muni) 
+  ) %>%
+  mutate(tipo_analise = "Saída",
+         hierarquia=nome_nivel_hierarquia_ordenado.x,
+         percentual = perc.x)
+  
+  muni_sel_entrada<-
+    dataset_analise %>%
+      filter(deslocamento == 1,
+             perc.y>=0,
+             perc.y<=50,
+             !is.na(nome_nivel_hierarquia.y)) %>% #filtro para tirar os outliers
+      distinct(nome_nivel_hierarquia_ordenado.y,codufmun, perc.y,mun_res_nome.y) %>%
+      inner_join(
+        agrupamento_municipio_cluster %>%
+        filter(code_muni %in% codigo_muni) %>%
+          rename(codufmun=code_muni) 
+      ) %>%
+      mutate(tipo_analise = "Entrada",
+             hierarquia=nome_nivel_hierarquia_ordenado.y,
+             percentual = perc.y)
+  
+
+  dataset_analise %>%
+  filter(deslocamento == 1,
+         perc.x>0,
+         perc.x<=50,
+         !is.na(nome_nivel_hierarquia.x)) %>% #filtro para tirar os outliers
+  distinct(nome_nivel_hierarquia_ordenado.x,munic_res, perc.x) %>%
+  inner_join(
+    agrupamento_municipio_cluster %>%
+      rename(munic_res=code_muni) 
+  ) %>%
+  mutate(tipo_analise = "Saída",
+         hierarquia=nome_nivel_hierarquia_ordenado.x,
+         percentual = perc.x) %>%
+  bind_rows(
+    dataset_analise %>%
+      filter(deslocamento == 1,
+             perc.y>0,
+             perc.y<=50,
+             !is.na(nome_nivel_hierarquia.y)) %>% #filtro para tirar os outliers
+      distinct(nome_nivel_hierarquia_ordenado.y,codufmun, perc.y) %>%
+      inner_join(
+        agrupamento_municipio_cluster %>%
+          rename(codufmun=code_muni) 
+      ) %>%
+      mutate(tipo_analise = "Entrada",
+             hierarquia=nome_nivel_hierarquia_ordenado.y,
+             percentual = perc.y)
+  )%>%
+  ggplot() +
+  geom_jitter(aes(x=hierarquia, y=percentual, fill=cluster_4_k), pch=21, color="#444444",size=2)+
+  geom_boxplot(aes(x=hierarquia, y=percentual),fill=NA, color= "white", outlier.shape = NA)+
+  geom_point(data= muni_sel_entrada, aes(x=hierarquia, y=percentual, fill=cluster_4_k), pch=21, color="white",size=4, )+
+  geom_point(data= muni_sel_saida, aes(x=hierarquia, y=percentual, fill=cluster_4_k), pch=21, color="white",size=4, )+
+  geom_label_repel(data= muni_sel_entrada, aes(x=hierarquia, y=percentual,label= mun_res_nome.y), color="black", fontface = "bold", force_pull = 0)+
+  geom_label_repel(data= muni_sel_saida, aes(x=hierarquia, y=percentual,label= mun_res_nome.x), color="black", fontface = "bold", force_pull = 0)+
+  scale_fill_discrete_divergingx(palette= "Zissou 1")+
+  theme_light() +
+  theme(
+    text = element_text(size=18),
+    panel.background = element_rect(fill = "black"),
+    panel.grid = element_blank(),
+    axis.title.x = element_blank(),
+    strip.background = element_rect(fill = "#505050"),
+    strip.text = element_text(color = "white"),
+    axis.text.x = element_text(angle = 45, vjust = 0.5),
+
+  )+
+  labs(
+    fill= str_wrap("Tipo agrupamento",15),
+    y = "Gastos Hospitalares e ambulatoriais - (%) do total"
+  )+
+  facet_grid(tipo_analise~.)
+
+  
+})
 ```
 

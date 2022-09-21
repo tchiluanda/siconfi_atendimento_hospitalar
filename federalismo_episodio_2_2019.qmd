@@ -851,7 +851,7 @@ muni_sel_posicao<-
 muni_sel_repel<-
    municipios_seat %>%
    mutate(code_muni = str_sub(as.character(code_muni),1,6)) %>%
-   filter(code_muni %in% c("260960", "260790","110150")) %>% #261160-Recife,260790 -Jaboatão, 260960 - Olinda, 260410 - Caruarau, 260545 - Fernando de Noronha, 110150 - Seringueiras-RO
+   filter(code_muni %in% c("260960", "260790")) %>% #261160-Recife,260790 -Jaboatão, 260960 - Olinda, 260410 - Caruarau, 260545 - Fernando de Noronha, 110150 - Seringueiras-RO
   inner_join(muni_sel)
   
 
@@ -927,8 +927,8 @@ municipios_seat %>%
                   color = "white", 
                   limits = c(0,2352),
                   fontface = "bold", 
-                  nudge_x = c(0,2,2.5), 
-                  nudge_y = c(0,-3.5,2),
+                  nudge_x = c(2,2.5), 
+                  nudge_y = c(-3.5,2),
                   show.legend = TRUE)+
   geom_text_repel(data = muni_sel_foco,
                   aes(x=X, y=Y, label= str_wrap(name_muni,20)),
@@ -1097,8 +1097,8 @@ municipios_seat %>%
                   segment.size = 1,
                   limits = c(0,2352),
                   fontface = "bold",
-                  nudge_x = c(-15,2,-5),
-                  nudge_y = c(0,-5.5,0),
+                  nudge_x = c(-15,2),
+                  nudge_y = c(0,-5.5),
                   show.legend = TRUE)+
   geom_text_repel(data = muni_sel_foco,
                   aes(x=X, y=Y, label= str_wrap(name_muni,20)),
@@ -1141,7 +1141,7 @@ g1|g2
 ## Chegadas, partidas e as relações com gastos Hospitalares e Ambulatoriais
 
 ```{r fig.width=20, fig.height=10, fig.dpi=500}
-agrupamento_municipio_cluster<-readRDS("agrupamento_municipio.RDS")
+agrupamento_municipio_cluster<-readRDS("agrupamento_municipio_2019.RDS")
 
 g1<-
 dataset_analise %>%

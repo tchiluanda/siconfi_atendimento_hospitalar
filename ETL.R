@@ -10,6 +10,12 @@ library(readxl)
 library(microdatasus)
 
 
+###############################################################################################
+#O script serviu como referência
+#para a construção de script com funções de ETL e dos scripts de ETL para os anos espec[ificos
+###############################################################################################
+
+
 
 siconfiBD::setup_siconfi(project_id = "nice-diorama-306223")
 
