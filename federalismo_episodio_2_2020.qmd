@@ -61,9 +61,195 @@ mun_sel_nivel_2A<-
 
 ```
 
+Nos próximos gráficos e parágrafos vamos mostrar que o atendimento hospitalar no Brasil requer com muita frequência deslocamentos dos pacientes para cidades diferentes das suas residências. Na maioria das vezes esses viagens não ultrapassam as cidades mais próximas, porém, em muitas situações alcançam os milhares de quilômetros. Tentaremos explicar porque esse fenômeno ocorre principalmente nos municípios menores e com menos capacidade de gestão e buscaremos investigar se há associação dessas situações com a fatia orçamentária que é dedicada ao atendimento hospitalar nos mais de 5500 municípios brasileiros.
+
+## Uma rápida apresentação sobre os gastos em atendimento hospitalar e ambulatorial
+
+O atendimento hospitalar e ambulatorial é uma das sub-funções de governo relacionadas à saúde pública. Uma análise com dados disponibilizados pela Secretaria do Tesouro Nacional(STN) revela que esse tipo de gasto é dividido entre as três esferas de governo, como pode ser visto na figura abaixo.
+
+```{r}
+sub_funcao_saude_Uniao_2019 <- read_csv("sub_funcao_saude_Uniao_2019.csv")
+sub_funcao_saude_UF_2019 <- read_csv("sub_funcao_saude_UF_2019.csv")
+sub_funcao_saude_Municipios_2019 <- read_delim("sub_funcao_saude_Municipios_2019.csv", 
+    ";", escape_double = FALSE, locale = locale(decimal_mark = ",", 
+        grouping_mark = "."), trim_ws = TRUE)
+
+
+sub_funcao_saude_Uniao_2019 %>%
+  mutate(Esfera = "União") %>%
+  select(Esfera,sub_funcao, VALUE) %>%
+  bind_rows(
+    sub_funcao_saude_UF_2019 %>%
+      mutate(Esfera = "Estados") %>%
+      select(Esfera,sub_funcao, VALUE),
+    sub_funcao_saude_Municipios_2019 %>%
+      mutate(Esfera = "Municípios") %>%
+      select(Esfera,sub_funcao, VALUE)
+  ) %>%
+  group_by(Esfera,sub_funcao) %>%
+  summarise(
+    valor_total = sum(VALUE)
+  ) %>%
+  ungroup() %>%
+  mutate(sub_funcao = reorder(sub_funcao,valor_total)) %>%
+  ggplot() +
+  geom_col(aes(y=sub_funcao , x=valor_total/10^9, fill= Esfera)) +
+  scale_fill_viridis(discrete = TRUE)+
+  scale_x_continuous(labels=function(x) format(x, big.mark = ".", scientific = FALSE))+
+  theme_light() +
+  theme(
+    panel.grid = element_blank()
+  )+
+  labs(
+    x= "Gasto em R$ (bi)"
+  )
+```
+
+Pela figura acima, que mostra a distribuição dos gastos das sub-funções de saúde entre as três esferas, percebe-se que a Assistência hospitalar e ambulatorial apresenta-se no topo do ranking. Além disso, fica claro que há uma divisão equilibrada dos gastos entre as três esferas.
+
+Ocorre, porém, que quando se foca os gastos nos diversos municípios brasileiros, o que se vê é que não há uma distribuição consistente. Vários municípios, principalmente de pequeno porte, executam em seu orçamento um percentual pequeno do total dos gastos em saúde nos serviços hospitalares e ambulatoriais. Veja os gráficos abaixo.
+
+```{r}
+
+library(forcats)
+sub_funcao_saude_Municipios_2019 %>%
+  #filter(sub_funcao %in% c("Atenção Básica" )) %>%
+  filter(VALUE>0) %>%
+  group_by(NO_ENTE) %>% 
+  summarise(
+    total = sum(VALUE)
+  ) %>%
+  ungroup() %>%
+  #slice_max(total, n= 30) %>%
+  inner_join(
+    sub_funcao_saude_Municipios_2019 %>%
+      filter(VALUE>0) %>%
+      #filter(sub_funcao %in% c("Assistência Hospitalar e Ambulatorial", "Atenção Básica" )) %>%
+      group_by(NO_ENTE, sub_funcao) %>% 
+      summarise(
+        total_sub_funcao = sum(VALUE)
+      ) %>%
+      ungroup() #%>%
+      #slice_max(total_sub_funcao, n= 20)
+  ) %>%
+mutate(NO_ENTE = reorder(NO_ENTE,total )) %>%
+ggplot() +
+  geom_col(aes(x=total_sub_funcao, y= NO_ENTE, fill =  fct_reorder(sub_funcao,total_sub_funcao,  sum) ), position = "fill") +
+  scale_fill_viridis( discrete = TRUE) +
+  theme_light() +
+  theme(
+    legend.title = element_blank(),
+    legend.position = "bottom",
+    axis.text.y  = element_blank(),
+    axis.title.y = element_blank(),
+    axis.text.x = element_blank(),
+    axis.title.x = element_blank(),
+    panel.grid = element_blank(),
+    panel.border = element_blank(),
+    axis.ticks = element_blank()
+    
+    
+  )
+
+```
+
+```{r}
+sub_funcao_saude_Municipios_2019 %>%
+  #filter(sub_funcao %in% c("Atenção Básica" )) %>%
+  filter(VALUE>0) %>%
+  group_by(NO_ENTE) %>% 
+  summarise(
+    total = sum(VALUE)
+  ) %>%
+  ungroup() %>%
+  
+  slice_max(total, n= 30) %>%
+  inner_join(
+    sub_funcao_saude_Municipios_2019 %>%
+      filter(VALUE>0) %>%
+      #filter(sub_funcao %in% c("Assistência Hospitalar e Ambulatorial", "Atenção Básica" )) %>%
+      group_by(NO_ENTE, sub_funcao) %>% 
+      summarise(
+        total_sub_funcao = sum(VALUE/10^6)
+      ) %>%
+      ungroup() %>%
+    mutate(sub_funcao= fct_reorder(sub_funcao,total_sub_funcao,  sum))
+      #slice_max(total_sub_funcao, n= 20)
+  ) %>%
+mutate(NO_ENTE = reorder(NO_ENTE,total )) %>%
+ggplot() +
+  geom_col(aes(x=total_sub_funcao, y= NO_ENTE, fill = sub_funcao )) +
+  scale_fill_viridis( discrete = TRUE) +
+  theme_light() +
+  theme(
+    legend.title = element_blank(),
+    legend.position = "bottom",
+    axis.title.y = element_blank(),
+    panel.grid = element_blank()
+  ) +
+  labs(
+    x= "Gastos em R$ (mi)"
+  )
+
+```
+
+```{r}
+sub_funcao_saude_Municipios_2019 %>%
+  #filter(sub_funcao %in% c("Atenção Básica" )) %>%
+  filter(VALUE>0) %>%
+  group_by(NO_ENTE) %>% 
+  summarise(
+    total = sum(VALUE)
+  ) %>%
+  ungroup() %>%
+  
+  slice_min(total, n= 30) %>%
+  inner_join(
+    sub_funcao_saude_Municipios_2019 %>%
+      filter(VALUE>0) %>%
+      #filter(sub_funcao %in% c("Assistência Hospitalar e Ambulatorial", "Atenção Básica" )) %>%
+      group_by(NO_ENTE, sub_funcao) %>% 
+      summarise(
+        total_sub_funcao = sum(VALUE/10^3)
+      ) %>%
+      ungroup() %>%
+    mutate(sub_funcao= fct_reorder(sub_funcao,total_sub_funcao,  sum))
+      #slice_max(total_sub_funcao, n= 20)
+  ) %>%
+mutate(NO_ENTE = reorder(NO_ENTE,total )) %>%
+ggplot() +
+  geom_col(aes(x=total_sub_funcao, y= NO_ENTE, fill = sub_funcao )) +
+  scale_fill_viridis( discrete = TRUE) +
+  theme_light() +
+  theme(
+    legend.title = element_blank(),
+    legend.position = "bottom",
+    axis.title.y = element_blank(),
+    panel.grid = element_blank(),
+
+    
+  )+
+  labs(
+    x= "Gastos em R$ (mil)"
+  )
+
+```
+
+O primeiro gráfico mostra as proporções dos gastos de todos os municípios do Brasil que estão na base de dados pesquisada [^1], o segundo exibe os gastos dos trinta municípios com maiores gastos em saúde e o terceiro foca nos gastos dos trinta municípios com menores gastos.
+
+[^1]: é importante destacar que os dados trabalhados até aqui são oriundos do SICONFI. O SICONFI é o sistema que centraliza as informações de finanças públicas dos entes federativos brasileiros. Especificamente para os gráficos gerados até aqui, usamos como suporte o aplicativo [Meu SICONFI](https://meusiconfi.tesouro.gov.br/Interface_rsiconfi.rmd) que permite baixar com grande facilidade os dados do sistema.
+
+Dá para observar no primeiro gráfico que a cor amarela relativa à assistência hospitalar domina o início do gráfico, mas depois passa a prevalecer o verde que é a cor de atenção básica. Aqui vale destacar que o gráfico está em ordem decrescente do gasto total. No segundo gráfico percebe-se esse fenômeno com mais clareza: os grandes municípios gastam mais com assistência hospitalar do que com atenção básica. No terceiro gráfico percebe-se o contrário, com uma maior quantidade de municípios com gastos maiores em Atenção Básica. Inclusive pode-se até observar que alguns municípios não apresentam gastos de assistência hospitalar e ambulatorial.
+
+É esse desequilíbrio entre os gastos entre os municípios brasileiros que nos fez questionar se o impacto dos gastos municipais em hospitais poderia gerar fluxos de pacientes para além das fronteiras municipais. Os próximos tópicos vamos verficar as dinâmicas dos deslocamentos de pacientes e ao final fazer a relação entre as entradas e saídas de paciente com a execução orçamentária dos municípios.
+
 ## Deslocamentos hospitalares e Regiões de Influência
 
-```{r fig.width=4, fig.height=2, fig.align='left'}
+Para começar a nossa análise vamos mostrar como uma amostra aleatória de mais de 1 milhão de internações hospitalares ocorridas em 2020 em todo o Brasil se divide entre atendimentos locais e com deslocamentos. [^2].
+
+[^2]: os dados de internações são extraídos do Sistema de Internações hospitalares do SUS. Para o caso específico desse trabalho usamos o pacote [{microdatasus}](https://github.com/rfsaldanha/microdatasus) desenvolvido por Saldanha et al (2019)
+
+```{r fig.width=4, fig.height=1, fig.align='left'}
 
 #Quantidade de atendimento total por tipo de deslocamento
 dataset_analise %>%
@@ -83,6 +269,10 @@ dataset_analise %>%
 
 
 ```
+
+Observa-se no gráfico que os atendimentos locais, ou seja feitos na própria cidade do paciente, são bem maiores do que os que exigem deslocamento. No entanto, ainda assim, a amostra revela mais de 360 mil procedimentos hospitalares que levaram os pacientes a se locomoverem de cidade. Considerando que essa é uma amostra de 10% do total de internações realizadas em 2020, ´não é difícil extrapolar que aproximadamente 3,6 milhões de atendimentos foram realizados fora das cidades de residência dos pacientes. Somente a título de comparação, a população do Uruguai foi estimada em [3,5 milhões de habitantes](https://datosmacro.expansion.com/paises/uruguay) em 2020..
+
+A figura logo abaixo mostra os rankings que são elaborados a partir da amostra. São três gráficos: as cidades que mais tiveram pacientes se deslocando para outros municípios; aquelas que mais receberam pacientes de fora; e as cidades com maior número de atendimentos locais.
 
 ```{r fig.width=8, fig.height=4}
 g1<-
@@ -168,7 +358,9 @@ g1|g2|g3
 
 ```
 
+O efeito população faz com que São Paulo apareça entre os três primeiros do ranking nos três gráficos. Em todo caso, consegue-se perceber que o maior destaque é nos atendimentos locais. É imensa a diferença da grande metrópole nacional em relação às outras cidades. Nota-se ainda no ranking do atendimento local a predominância das metrópoles e grandes cidades nacionais. Por outro lado, observa-se que municípios de populações menores que as metróploes nacionais são as mais frequentes no ranking das sáídas. Já nas entradas percebe-se que Recife é a cidade que mais recebe pacientes de fora. A capital de Pernambuco supera, inclusive em termos absolutos, São Paulo que é uma das cidades mais populosas da América Latina.
 
+Esses gráficos e esses achados mais interessantes nos inspiram a fazer as análises sobre deslocamentos para atendimentos hospitalar tendo como referência o quanto as cidades têm capacidade de gestão e influência sobre as outras. Tendo como referência essas duas variáveis o [IBGE](https://www.ibge.gov.br/geociencias/organizacao-do-territorio/redes-e-fluxos-geograficos/15798-regioes-de-influencia-das-cidades.html?=&t=acesso-ao-produto) oferece um modelo hierárquico das cidades brasileiras. Vamos utilizar esse modelo em vários dos gráficos a partir de agora. Começando mostrando quais são os níveis hierárquicos e como se dividem territoralmente no mapa brasileiro. Veja abaixo.
 
 ```{r fig.width=20, fig.height=10, fig.dpi=300}
 #mapa dos municípios brasileiros por nível hierárquico do REGIC
@@ -319,8 +511,6 @@ cowplot::ggdraw()+
 
 ```
 
-
-
 ```{r fig.width=20, fig.height=10, fig.dpi=500}
 
 agrupamento_municipio<-
@@ -447,8 +637,6 @@ municipios_seat %>%
   )+
   facet_wrap(nome_nivel_hierarquia_ordenado~.)
 ```
-
-
 
 ```{r fig.width=20, fig.height=10}
 
@@ -1217,10 +1405,6 @@ dataset_analise %>%
 g1|g2
 
 ```
-
-
-
-
 
 ```{r fig.width=20, fig.height=10, fig.dpi=500}
 dataset_analise %>%
