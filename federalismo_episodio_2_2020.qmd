@@ -21,6 +21,7 @@ library(sf)
 library(ggrepel)
 library(colorspace)
 library(patchwork)
+library(easyalluvial)
 
 dataset_analise <- readRDS("~/Github/siconfi_atendimento_hospitalar/dataset_analise_2020.RDS")
 
@@ -59,10 +60,16 @@ mun_sel_nivel_2A<-
       mutate(code_muni = cod_cidade))
 
 
+library(readr)
+de_para_hierarquia <- read_delim("de_para_hierarquia.csv", 
+    delim = ";", escape_double = FALSE, trim_ws = TRUE)
+
 
 ```
 
-Nos próximos gráficos e parágrafos vamos mostrar que o atendimento hospitalar no Brasil requer com muita frequência deslocamentos dos pacientes para cidades diferentes das suas residências. Para sermos mais precisos, em torno de 3,6 milhões de deslocamentos desse tipo somente no ano de 2020. Na maioria das vezes essas viagens não ultrapassam as cidades mais próximas, porém, em muitas situações, alcançam os milhares de quilômetros. Tentaremos explicar porque esse fenômeno ocorre principalmente nos municípios menores e com menos capacidade de gestão e buscaremos investigar se há associação dessas situações com a fatia orçamentária que é dedicada ao atendimento hospitalar nos mais de 5500 municípios brasileiros.
+Nos próximos gráficos e parágrafos vamos mostrar que o atendimento hospitalar no Brasil requer com muita frequência deslocamentos dos pacientes para cidades diferentes das suas residências. Para sermos mais precisos, em torno de 3,6 milhões de deslocamentos desse tipo somente no ano de 2020. Na maioria das vezes essas viagens não ultrapassam as cidades mais próximas, porém, em muitas situações, alcançam os milhares de quilômetros.
+
+Essa constatação é decorrente de uma investigação que se originou a partir dos dados sobre gastos em atendimento hospitalar e ambulatorial. Há uma imensa desigualdade entre os municípios brasileiros: a grande maioria das localidades de pequeno porte com gastos bastante inferiores às de médio e grande porte. Essa observação, por sua vez, nos levou a questionar se a desigualdade de gastos geraria fluxos significativos de pacientes entre cidades com baixa capacidade hospitar para aquelas com maiores disponibildiades de infra-estrutura de atendimento. Com o apoio de um modelo de influência de cidades produzido pelo IBGE conseguimos mostrar que o fenômeno dos deslocamentos de pacientes ocorre e atinge principalmente os municípios menores, com menos capacidade de gestão e de menor gastos proporcional em atendimento hospitalar e ambulatorial. Por outro lado, alguns poucos municípios maiores, com mais capacidade de influência e de gestão, passam a receber pacientes de fora aumentando a demanda por seus serviços de sáude.
 
 ## Uma rápida apresentação sobre os gastos em atendimento hospitalar e ambulatorial
 
@@ -278,7 +285,7 @@ dataset_analise %>%
 
 ```
 
-Observa-se no gráfico que os atendimentos locais, ou seja feitos na própria cidade do paciente, são bem numerosos do que os que exigem deslocamento. No entanto, ainda assim, a amostra revela mais de 360 mil procedimentos hospitalares que levaram os pacientes a se locomoverem de cidade. Considerando que essa é uma amostra de 10% do total de internações realizadas em 2020, não é difícil extrapolar que aproximadamente 3,6 milhões de atendimentos foram realizados fora das cidades de residência dos pacientes. Somente a título de comparação, a população do Uruguai foi estimada em [3,5 milhões de habitantes](https://datosmacro.expansion.com/paises/uruguay) em 2020.
+Observa-se no gráfico que os atendimentos locais, ou seja feitos na própria cidade do paciente, são bem mais numerosos do que os que exigem deslocamento. No entanto, ainda assim, a amostra revela mais de 360 mil procedimentos hospitalares que levaram os pacientes a se locomoverem de cidade. Considerando que essa é uma amostra de 10% do total de internações realizadas em 2020, não é difícil extrapolar que aproximadamente 3,6 milhões de atendimentos foram realizados fora das cidades de residência dos pacientes. Somente a título de comparação demográfica, a população do Uruguai foi estimada em [3,5 milhões de habitantes](https://datosmacro.expansion.com/paises/uruguay) em 2020.
 
 A figura logo abaixo mostra os rankings que são elaborados a partir da amostra. São três gráficos: as cidades que mais tiveram pacientes se deslocando para outros municípios; aquelas que mais receberam pacientes de fora; e as cidades com maior número de atendimentos locais.
 
@@ -368,7 +375,7 @@ g1|g2|g3
 
 O efeito população faz com que São Paulo apareça entre as três primeiras posições do ranking nos três gráficos. Em todo caso, consegue-se perceber que o maior destaque é nos atendimentos locais. É imensa a diferença da grande metrópole nacional em relação às outras cidades. Nota-se ainda no ranking do atendimento local a predominância das metrópoles e grandes cidades nacionais. Por outro lado, observa-se que municípios de populações menores que as metróploes são as mais frequentes no ranking das saídas. Já nas entradas percebe-se que Recife é a cidade que mais recebe pacientes de fora. A capital de Pernambuco supera São Paulo, inclusive em valores absolutos. Vale lembrar que a população de São Paulo é quase oito vezes maior do que a de Recife.
 
-Esses gráficos e esses achados mais interessantes nos inspiram a fazer as análises sobre deslocamentos para atendimentos hospitalar tendo como referência o quanto as cidades têm capacidade de gestão e influência sobre as outras. Usando essas duas variáveis o [IBGE](https://www.ibge.gov.br/geociencias/organizacao-do-territorio/redes-e-fluxos-geograficos/15798-regioes-de-influencia-das-cidades.html?=&t=acesso-ao-produto) elaborou um modelo hierárquico das cidades brasileiras conhecido como REGIC. Vamos utilizar esse modelo em vários dos gráficos a partir de agora.
+Esses gráficos e esses achados mais interessantes nos inspiram a fazer as análises sobre deslocamentos para atendimentos hospitalar tendo como referência o quanto as cidades têm capacidade de gestão e influência sobre as outras. Usando essas duas variáveis, o [IBGE](https://www.ibge.gov.br/geociencias/organizacao-do-territorio/redes-e-fluxos-geograficos/15798-regioes-de-influencia-das-cidades.html?=&t=acesso-ao-produto) elaborou um modelo hierárquico das cidades brasileiras conhecido como REGIC. Vamos utilizar esse modelo em vários dos gráficos a partir de agora.
 
 Começamos mostrando quais são os níveis hierárquicos do REGIC e como se dividem territoralmente no mapa brasileiro. Veja abaixo.
 
@@ -461,7 +468,7 @@ O último nível hierárquico corresponde aos **Centros Locais**. Aqui a influê
 
 ## As regiões de influência: entradas e saídas
 
-Como as regiões de influência se associam aos fluxos de pacientes? Existem diversas formas de se responder essa pergunta. Vamos começar mostrando dois gráficos, o primeiro que mostra o número de internações para cada grupo hierárquico e o segundo que mostra a proporção de atendimentos nas três classes: entrada, pacientes vindos de outras cidade, saída, pacientes atendidos em outras cidades, e local, pacientes que não precisaram se deslocar. Sempre bom lembrar que os dados trabalhados nessa análise referem-se a uma amostra do total de internações ocorridas no Brasil em 2020.
+Como as regiões de influência se associam aos fluxos de pacientes? Existem diversas formas de se responder essa pergunta. Vamos começar mostrando dois gráficos, o primeiro que mostra o número de internações para cada grupo hierárquico e o segundo que mostra a proporção de atendimentos nas três classes: entrada, pacientes vindos de outras cidade; saída, pacientes atendidos em outras cidades; e local, pacientes que não precisaram se deslocar. Sempre bom lembrar que os dados trabalhados nessa análise referem-se a uma amostra do total de internações ocorridas no Brasil em 2020.
 
 ```{r fig.width=8, fig.height=4}
 
@@ -539,19 +546,15 @@ g2<-dataset_analise %>%
 
 g1|g2
 
-# cowplot::ggdraw()+
-#   cowplot::draw_plot(g1,0, 0, .5, 1)+
-#   cowplot::draw_plot(g2,.5, 0, .5, 1)
-
 ```
 
-No gráfico à esquerda vê-se que os centros locais lideram o ranking de quantidade de atendimentos. A soma das populações dos mais de 4000 municípios desse nível hierárquico ajuda a justificar essa posição. Na verdade a combinação de efeito da quantidade de municípios e de população dos municípios explica grande parte do ranking. A ordem do gráfico da esquerda foi utilizada para o gráfico da direita. É aí onde se encontram os principais achados. 
+No gráfico à esquerda vê-se que os centros locais lideram o ranking de quantidade de atendimentos. A soma das populações dos mais de 4000 municípios desse nível hierárquico ajuda a justificar essa posição. Na verdade a combinação de efeito da quantidade de municípios e de população dos municípios explica grande parte do ranking. A ordem do gráfico da esquerda foi utilizada para o gráfico da direita. É aí onde se encontram os principais achados.
 
-Vê-se que os centros locais se destacam por ter a maior proporção de atendimentos dos seus residentes em outras cidades. Isso combina com o que se esperava da classificação REGIC onde esses municípios se destacam pela pouca autonomia de gestão. Por outro lado, todos os sub-níveis hierárquicos de metrópoles destacam-se pela grande autonomia no atendimento de seus pacientes.
+Vê-se que os centros locais se destacam por ter a maior proporção de atendimentos dos seus residentes em outras cidades. Isso combina com o que se esperava da classificação REGIC onde esses municípios se caracterizam pela pouca autonomia de gestão. Por outro lado, todos os sub-níveis hierárquicos de metrópoles destacam-se pela grande autonomia no atendimento de seus pacientes.
 
-Em relação a recepção de pacientes de outras cidades, vê-se um forte papel desempenhado por Metrópole, mas, ainda mais importante, destaca-se o papel dos níveis intermediários da hierarquia REGIC, representados principalmente por capitais regionais e centros sub-regionais. Aqui pode-se inferir que os pacientes procuram primeiro o atendimento nos municípios de nível de influência um pouco mais elevada e possivelmente mais próximos ao seu endereço. Em outras palavras, não há necessariamente um fluxo direto para as metrópoles. Um pouco mais adiante vamos mostrar isso de uma forma mais evidente com os fluxos entre as classes hierárquicas. 
+Em relação a recepção de pacientes de outras cidades, vê-se um forte papel desempenhado por Metrópole, mas, ainda mais importante, destaca-se o papel dos níveis intermediários da hierarquia REGIC, representados principalmente por capitais regionais e centros sub-regionais. Aqui pode-se inferir que os pacientes procuram primeiro o atendimento nos municípios de nível de influência um pouco mais elevadao e possivelmente mais próximos ao seu endereço. Em outras palavras, não há necessariamente um fluxo direto para as metrópoles. Um pouco mais adiante vamos mostrar isso de uma forma mais evidente com os fluxos entre as classes hierárquicas.
 
-Vamos nesse momento para uma outra análise: como fica no mapa do Brasil a informação de entradas e saídas de pacientes? Com os dados de atendimentos calculamos para cada cidade qual o percentual de pacientes que são atendidos em outro municípios. Da mesma forma, calculamos para cada cidade quanto do total de pacientes atendidos em sua rede hospitalar são oriundos de outras cidades. Vamos começar mostrando um gráfico que trabalha com o percentual de saída de pacientes para outras localidades. 
+Vamos nesse momento para uma outra análise: como fica no mapa do Brasil a informação de entradas e saídas de pacientes? Com os dados de atendimentos calculamos para cada cidade qual o percentual de pacientes que são atendidos em outro municípios. Da mesma forma, calculamos para cada cidade quanto do total de pacientes atendidos em sua rede hospitalar são oriundos de outros centros urbanos. Vamos começar mostrando um gráfico que trabalha com o percentual de saída de pacientes para outras localidades.
 
 ```{r fig.width=20, fig.height=10, fig.dpi=500}
 
@@ -644,9 +647,9 @@ municipios_seat %>%
 
 ```
 
-Como se vê no mapa os centros locais concentram os pontos com tons vermelhos mais fortes que mostram os municípios com elevado percentual de pacientes que precisam viajar para serem atendidos em hospitais. Todos os sub-níveis hierárquicos de metrópoles, por outro lado, apresentam-se com cores amarelas que representam baixa necessidade de deslocamentos. 
+Como se vê no mapa os centros locais concentram os pontos com tons vermelhos mais fortes que mostram os municípios com elevado percentual de pacientes que precisam viajar para serem atendidos em hospitais. Todos os sub-níveis hierárquicos de metrópoles, por outro lado, apresentam-se com cores amarelas que representam baixa necessidade de deslocamentos.
 
-Os mapas reforçam o que se esperava dos níveis hierárquicos extremos no que diz respeito à autonomia dada pelas capacidades de gestão. Onde há poucos serviços e baixa gestão, há forte dependência de estruturas hospitalares de outros municípios. Pelo lado contrário, cidades como São Paulo, Brasília, Rio de Janeiro, ou mesmo capitais regionais como São Luis e Maceió, oferecem estruturas adminsitrativas e serviços capazes de prover o atendimento hospitalar necessário para seus pacientes.
+Os mapas reforçam o que se esperava dos níveis hierárquicos extremos no que diz respeito à autonomia dada pelas capacidades de gestão. Onde há poucos serviços e baixa gestão, há forte dependência de estruturas hospitalares de outros municípios. Pelo lado contrário, cidades como São Paulo, Brasília, Rio de Janeiro, ou mesmo capitais regionais como São Luis e Maceió, oferecem estruturas administrativas e serviços capazes de prover o atendimento hospitalar necessário para seus pacientes.
 
 Vamos ver agora como ficam os mapas quando se analisa a chegada de pacientes vindos de outros municípios.
 
@@ -686,41 +689,67 @@ municipios_seat %>%
   facet_wrap(nome_nivel_hierarquia_ordenado~.)
 ```
 
-As cores do mapa mostram o percentual de pacientes atendidos nas redes hospitalares de cada cidade que são oriundos de outros municípios. É interessante observar que a escala prevê que se chegue a 0% de pacientes vindos de outros municípios. Para esses casos a cor dos pontos é próxima de branco. Se observarmos o mapa dos centros locais vemos uma garnde predominância dessa situação. 
+As cores do mapa mostram o percentual de pacientes atendidos nas redes hospitalares de cada cidade que são oriundos de outros municípios. É interessante observar que a escala prevê que se chegue a 0% de pacientes vindos de outros municípios. Para esses casos a cor dos pontos é próxima de branco. Se observarmos o mapa dos centros locais vemos uma grande predominância dessa situação.
 
-Por outro lado, as cores mais quentes são as que representam os municípios com alta receptividade de pacientes de fora. Aqui se percebe o papel importante das metrópoles, que já era esperado dado o nível de influência previsto no REGIC. Mas é bastante revelador o grande número de pontos em tons vermelhos fortes presentes nos mapas das capitais regionais e dos centros sub-regionais. Reforçando o que já havia sido observado anteriormente.
+Por outro lado, as cores mais quentes são as que representam os municípios com alta receptividade de pacientes de fora. Aqui se percebe o papel importante das metrópoles, que já era esperado dado o nível de influência previsto no REGIC. O achado mais revelador é o grande número de pontos em tons vermelhos fortes presentes nos mapas das capitais regionais e dos centros sub-regionais. Isso reforça o que já havia sido observado anteriormente sobre a importância desses tipos de centros urbanos para a recepção de pacientes vindos de cidades com baixa capacidade de gestão.
 
-Nos próximos gráficos deixamos mais claro como se dá o fluxo entre os níveis hierárquicos. Você verá que ficará mais claro qual o papel dos níveis hierárquicos intermediários na absorção dos pacientes que precisam se deslocar de suas cidades de residência.
+Nos próximos gráficos exploramos como se dá o fluxo entre os níveis hierárquicos. Você verá que ficará mais claro qual o papel dos níveis hierárquicos intermediários na absorção dos pacientes que precisam se deslocar de suas cidades de residência.
 
 ```{r fig.width=20, fig.height=10}
+
 
 ordem_y<- 
 dataset_analise %>%
   filter(deslocamento==1,
-         nome_nivel_hierarquia.x == "Centro Local") %>%
+         nome_nivel_hierarquia.x == "Centro Local",
+         !(is.na(nome_nivel_hierarquia.y))) %>%
   group_by(nome_nivel_hierarquia.y) %>%
   summarise(
     quantidade = n()
-  ) %>%
-  arrange(quantidade)
+  )  %>%
+  ungroup() %>%
+   inner_join(
+     de_para_hierarquia %>%
+       rename(nome_nivel_hierarquia.y=nome_nivel_hierarquia,
+              entrada_abreviado = nome_abreviado)) %>%
+  arrange(quantidade) %>%
+  mutate(entrada = entrada_abreviado)
 
  aluvial<-
      dataset_analise %>%
   filter(deslocamento==1,
-         nome_nivel_hierarquia.x == "Centro Local") %>%
+         nome_nivel_hierarquia.x == "Centro Local",
+         !(is.na(nome_nivel_hierarquia.y))) %>%
   mutate(saída = nome_nivel_hierarquia.x,
          entrada =nome_nivel_hierarquia.y ) %>%
   select(saída, entrada) 
-  
-  
-aluvial$entrada <- factor(aluvial$entrada, levels = unique(ordem_y$nome_nivel_hierarquia.y[order(ordem_y$quantidade)])) 
-  
- p<- easyalluvial::alluvial_wide(aluvial)
  
- parcats::parcats(p, data_input = aluvial,marginal_histograms = FALSE)
+
+ aluvial<- 
+   aluvial %>%
+   inner_join(
+     de_para_hierarquia %>%
+       rename(saída=nome_nivel_hierarquia,
+              saida_abreviado = nome_abreviado)) %>%
+   inner_join(
+     de_para_hierarquia %>%
+       rename(entrada=nome_nivel_hierarquia,
+              entrada_abreviado = nome_abreviado)) %>%
+   select(saida_abreviado, entrada_abreviado ) %>%
+   rename(saída= saida_abreviado,
+          entrada = entrada_abreviado)
+ 
+ aluvial$entrada <- factor(aluvial$entrada, levels = unique(ordem_y$entrada[order(ordem_y$quantidade)])) 
+
+
+ p<-
+ alluvial_wide( data = aluvial, 
+                max_variables = 2, 
+                fill_by = 'first_variable') 
+
+
+parcats::parcats(p, data_input = aluvial,marginal_histograms = FALSE,labelfont = list(size = 15, color = "black"), sortpaths= "backwards")
 ```
-
-
 
 ```{r fig.width=20, fig.height=10}
 
@@ -732,7 +761,14 @@ dataset_analise %>%
   summarise(
     quantidade = n()
   ) %>%
-  arrange(quantidade)
+  arrange(quantidade)%>%
+  ungroup() %>%
+   inner_join(
+     de_para_hierarquia %>%
+       rename(nome_nivel_hierarquia.x=nome_nivel_hierarquia,
+              saida_abreviado = nome_abreviado)) %>%
+  arrange(quantidade) %>%
+  mutate(saida = saida_abreviado)
 
 
 
@@ -743,8 +779,24 @@ aluvial<-
   mutate(saida = nome_nivel_hierarquia.x,
          entrada =nome_nivel_hierarquia.y ) %>%
   select(saida, entrada) 
+
+ aluvial<- 
+   aluvial %>%
+   inner_join(
+     de_para_hierarquia %>%
+       rename(saida=nome_nivel_hierarquia,
+              saida_abreviado = nome_abreviado)) %>%
+   inner_join(
+     de_para_hierarquia %>%
+       rename(entrada=nome_nivel_hierarquia,
+              entrada_abreviado = nome_abreviado)) %>%
+   select(saida_abreviado, entrada_abreviado ) %>%
+   rename(saida= saida_abreviado,
+          entrada = entrada_abreviado)
+
+
    
-aluvial$saida<- factor(aluvial$saida , levels = unique(ordem_x$nome_nivel_hierarquia.x[order(ordem_x$quantidade)])) 
+aluvial$saida<- factor(aluvial$saida , levels = unique(ordem_x$saida[order(ordem_x$quantidade)])) 
   
  p<- easyalluvial::alluvial_wide(aluvial)
  
@@ -762,146 +814,44 @@ dataset_analise %>%
   summarise(
     quantidade = n()
   ) %>%
-  arrange(desc(quantidade))
+  ungroup() %>%
+   inner_join(
+     de_para_hierarquia %>%
+       rename(nome_nivel_hierarquia.y=nome_nivel_hierarquia,
+              entrada_abreviado = nome_abreviado)) %>%
+  arrange(quantidade) %>%
+  mutate(entrada = entrada_abreviado)
 
 aluvial<-
      dataset_analise %>%
   filter(deslocamento==1,
          nome_nivel_hierarquia.x %in% c("Capital Regional B","Capital Regional C", "Centro Sub-Regional B")) %>%
-  mutate(saída = nome_nivel_hierarquia.x,
+  mutate(saida = nome_nivel_hierarquia.x,
          entrada =nome_nivel_hierarquia.y ) %>%
-  select(saída, entrada) 
+  select(saida, entrada) 
+
+ aluvial<- 
+   aluvial %>%
+   inner_join(
+     de_para_hierarquia %>%
+       rename(saida=nome_nivel_hierarquia,
+              saida_abreviado = nome_abreviado)) %>%
+   inner_join(
+     de_para_hierarquia %>%
+       rename(entrada=nome_nivel_hierarquia,
+              entrada_abreviado = nome_abreviado)) %>%
+   select(saida_abreviado, entrada_abreviado ) %>%
+   rename(saida= saida_abreviado,
+          entrada = entrada_abreviado)
    
-aluvial$entrada <- factor(aluvial$entrada, levels = unique(ordem_y$nome_nivel_hierarquia.y[order(ordem_y$quantidade)])) 
+aluvial$entrada <- factor(aluvial$entrada, levels = unique(ordem_y$entrada[order(ordem_y$quantidade)])) 
   
  p<- easyalluvial::alluvial_wide(aluvial)
  
  parcats::parcats(p, data_input = aluvial,marginal_histograms = FALSE, sortpaths= "backward")
 ```
 
-```{r}
-
-ordem_y<- 
-dataset_analise %>%
-  filter(deslocamento==1,
-         nome_nivel_hierarquia.x %in% c("Centro de Zona B")) %>%
-  group_by(nome_nivel_hierarquia.y) %>%
-  summarise(
-    quantidade = n()
-  ) %>%
-  arrange(desc(quantidade))
-
-aluvial<-
-     dataset_analise %>%
-  filter(deslocamento==1,
-         nome_nivel_hierarquia.x %in% c("Centro de Zona B")) %>%
-  mutate(saída = nome_nivel_hierarquia.x,
-         entrada =nome_nivel_hierarquia.y ) %>%
-  select(saída, entrada) 
-   
-aluvial$entrada <- factor(aluvial$entrada, levels = unique(ordem_y$nome_nivel_hierarquia.y[order(ordem_y$quantidade)])) 
-  
- p<- easyalluvial::alluvial_wide(aluvial)
- 
- parcats::parcats(p, data_input = aluvial,marginal_histograms = FALSE)
-```
-
 ## Distâncias percorridas
-
-```{r fig.width=20, fig.height=10, fig.dpi=500}
-
-
-media_entrada<- mean(agrupamento_municipio$entrada)
-media_saida<- mean(agrupamento_municipio$saida)
-
-agrupamento_municipio_distancia<-
-  dataset_analise %>%
-  filter(deslocamento == 1) %>%
-  group_by(munic_res) %>%
-  summarise(
-    media_distancia = -1* mean(distancia, na.rm = TRUE)
-  ) %>%
-  ungroup() %>%
-  rename(code_muni= munic_res) %>%
-  inner_join(
-    agrupamento_municipio %>%
-      filter(perc_saida > perc_entrada)
-  ) %>%
-  bind_rows(
-    dataset_analise %>%
-      #filter(deslocamento == 1) %>%
-      group_by(codufmun) %>%
-      summarise(
-        media_distancia = mean(distancia, na.rm = TRUE)
-      ) %>%
-      ungroup() %>%
-      rename(code_muni= codufmun) %>%
-      inner_join(
-        agrupamento_municipio %>%
-          filter(perc_entrada > perc_saida)
-      ),
-      dataset_analise %>%
-      #filter(deslocamento == 1) %>%
-      group_by(codufmun) %>%
-      summarise(
-        media_distancia = mean(distancia, na.rm = TRUE) 
-      ) %>%
-      ungroup() %>%
-      rename(code_muni= codufmun) %>%
-      inner_join(
-        agrupamento_municipio %>%
-          filter(perc_entrada == perc_saida,
-                 liquido >= 0)
-      ),
-      dataset_analise %>%
-      #filter(deslocamento == 1) %>%
-      group_by(codufmun) %>%
-      summarise(
-        media_distancia = -mean(distancia, na.rm = TRUE) 
-      ) %>%
-      ungroup() %>%
-      rename(code_muni= codufmun) %>%
-      inner_join(
-        agrupamento_municipio %>%
-          filter(perc_entrada == perc_saida,
-                 liquido < 0)
-      ) 
-
-  ) %>% 
-  mutate(media_ajustada = ifelse(media_distancia>=0,media_distancia*(perc_entrada/100)*ifelse((entrada/media_entrada)>1,1,(entrada/media_entrada)),
-                                   media_distancia*(perc_saida/100)*ifelse((saida/media_saida)>1,1,(saida/media_saida))))
-
-
-
-
-municipios %>%
-  mutate(code_muni = str_sub(as.character(code_muni),1,6)) %>%
-  left_join(
-    agrupamento_municipio_distancia
-  ) %>%
-  ggplot()+
-  geom_sf(aes( fill= media_ajustada),  color=NA, size=0.01)+
-  geom_sf(data = estados_mapa, fill=NA, color="black")+
-  scale_fill_continuous_divergingx(palette= "Zissou 1" , na.value="white", trans="pseudo_log", rev=TRUE, breaks=c(0,100,-150))+
-  labs(
-    fill= str_wrap("distância média ajustada (em km)",10) 
-  )+
-  theme_light() +
-  theme(
-    text = element_text(size=18),
-    panel.background = element_rect(fill = "black"),
-    panel.grid = element_blank(),
-    axis.title.x = element_blank(),
-    axis.title.y = element_blank(),
-    strip.background = element_rect(fill = "#505050"),
-    strip.text = element_text(color = "white"),
-    axis.text = element_blank(),
-    legend.key = element_rect(fill = "#15202B")
-    
-  )
-
-
-```
 
 ```{r fig.width=20, fig.height=10, fig.dpi=500}
 
