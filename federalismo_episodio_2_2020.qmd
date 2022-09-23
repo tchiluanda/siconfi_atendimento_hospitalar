@@ -644,7 +644,11 @@ municipios_seat %>%
 
 ```
 
+Como se vê no mapa os centros locais concentram os pontos com tons vermelhos mais fortes que mostram os municípios com elevado percentual de pacientes que precisam viajar para serem atendidos em hospitais. Todos os sub-níveis hierárquicos de metrópoles, por outro lado, apresentam-se com cores amarelas que representam baixa necessidade de deslocamentos. 
 
+Os mapas reforçam o que se esperava dos níveis hierárquicos extremos no que diz respeito à autonomia dada pelas capacidades de gestão. Onde há poucos serviços e baixa gestão, há forte dependência de estruturas hospitalares de outros municípios. Pelo lado contrário, cidades como São Paulo, Brasília, Rio de Janeiro, ou mesmo capitais regionais como São Luis e Maceió, oferecem estruturas adminsitrativas e serviços capazes de prover o atendimento hospitalar necessário para seus pacientes.
+
+Vamos ver agora como ficam os mapas quando se analisa a chegada de pacientes vindos de outros municípios.
 
 ```{r fig.width=20, fig.height=10, fig.dpi=500}
 municipios_seat %>%
@@ -682,6 +686,12 @@ municipios_seat %>%
   facet_wrap(nome_nivel_hierarquia_ordenado~.)
 ```
 
+As cores do mapa mostram o percentual de pacientes atendidos nas redes hospitalares de cada cidade que são oriundos de outros municípios. É interessante observar que a escala prevê que se chegue a 0% de pacientes vindos de outros municípios. Para esses casos a cor dos pontos é próxima de branco. Se observarmos o mapa dos centros locais vemos uma garnde predominância dessa situação. 
+
+Por outro lado, as cores mais quentes são as que representam os municípios com alta receptividade de pacientes de fora. Aqui se percebe o papel importante das metrópoles, que já era esperado dado o nível de influência previsto no REGIC. Mas é bastante revelador o grande número de pontos em tons vermelhos fortes presentes nos mapas das capitais regionais e dos centros sub-regionais. Reforçando o que já havia sido observado anteriormente.
+
+Nos próximos gráficos deixamos mais claro como se dá o fluxo entre os níveis hierárquicos. Você verá que ficará mais claro qual o papel dos níveis hierárquicos intermediários na absorção dos pacientes que precisam se deslocar de suas cidades de residência.
+
 ```{r fig.width=20, fig.height=10}
 
 ordem_y<- 
@@ -709,6 +719,8 @@ aluvial$entrada <- factor(aluvial$entrada, levels = unique(ordem_y$nome_nivel_hi
  
  parcats::parcats(p, data_input = aluvial,marginal_histograms = FALSE)
 ```
+
+
 
 ```{r fig.width=20, fig.height=10}
 
