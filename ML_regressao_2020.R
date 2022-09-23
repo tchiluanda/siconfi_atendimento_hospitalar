@@ -28,8 +28,11 @@ base_ml<-
 
     )
 
+base_ml<-
+base_ml %>%
+  filter(!is.na(nivel_hierarquia))
 
-is.na(base_ml)
+is.na(fab)
 
 
 control_dt <- trainControl(method="cv")

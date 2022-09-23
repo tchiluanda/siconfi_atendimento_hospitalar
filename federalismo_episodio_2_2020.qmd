@@ -278,7 +278,7 @@ dataset_analise %>%
 
 ```
 
-Observa-se no gráfico que os atendimentos locais, ou seja feitos na própria cidade do paciente, são bem maiores do que os que exigem deslocamento. No entanto, ainda assim, a amostra revela mais de 360 mil procedimentos hospitalares que levaram os pacientes a se locomoverem de cidade. Considerando que essa é uma amostra de 10% do total de internações realizadas em 2020, não é difícil extrapolar que aproximadamente 3,6 milhões de atendimentos foram realizados fora das cidades de residência dos pacientes. Somente a título de comparação, a população do Uruguai foi estimada em [3,5 milhões de habitantes](https://datosmacro.expansion.com/paises/uruguay) em 2020.
+Observa-se no gráfico que os atendimentos locais, ou seja feitos na própria cidade do paciente, são bem numerosos do que os que exigem deslocamento. No entanto, ainda assim, a amostra revela mais de 360 mil procedimentos hospitalares que levaram os pacientes a se locomoverem de cidade. Considerando que essa é uma amostra de 10% do total de internações realizadas em 2020, não é difícil extrapolar que aproximadamente 3,6 milhões de atendimentos foram realizados fora das cidades de residência dos pacientes. Somente a título de comparação, a população do Uruguai foi estimada em [3,5 milhões de habitantes](https://datosmacro.expansion.com/paises/uruguay) em 2020.
 
 A figura logo abaixo mostra os rankings que são elaborados a partir da amostra. São três gráficos: as cidades que mais tiveram pacientes se deslocando para outros municípios; aquelas que mais receberam pacientes de fora; e as cidades com maior número de atendimentos locais.
 
@@ -368,9 +368,9 @@ g1|g2|g3
 
 O efeito população faz com que São Paulo apareça entre as três primeiras posições do ranking nos três gráficos. Em todo caso, consegue-se perceber que o maior destaque é nos atendimentos locais. É imensa a diferença da grande metrópole nacional em relação às outras cidades. Nota-se ainda no ranking do atendimento local a predominância das metrópoles e grandes cidades nacionais. Por outro lado, observa-se que municípios de populações menores que as metróploes são as mais frequentes no ranking das saídas. Já nas entradas percebe-se que Recife é a cidade que mais recebe pacientes de fora. A capital de Pernambuco supera São Paulo, inclusive em valores absolutos. Vale lembrar que a população de São Paulo é quase oito vezes maior do que a de Recife.
 
-Esses gráficos e esses achados mais interessantes nos inspiram a fazer as análises sobre deslocamentos para atendimentos hospitalar tendo como referência o quanto as cidades têm capacidade de gestão e influência sobre as outras. Tendo como referência essas duas variáveis o [IBGE](https://www.ibge.gov.br/geociencias/organizacao-do-territorio/redes-e-fluxos-geograficos/15798-regioes-de-influencia-das-cidades.html?=&t=acesso-ao-produto) oferece um modelo hierárquico das cidades brasileiras conhecido como REGIC. Vamos utilizar esse modelo em vários dos gráficos a partir de agora.
+Esses gráficos e esses achados mais interessantes nos inspiram a fazer as análises sobre deslocamentos para atendimentos hospitalar tendo como referência o quanto as cidades têm capacidade de gestão e influência sobre as outras. Usando essas duas variáveis o [IBGE](https://www.ibge.gov.br/geociencias/organizacao-do-territorio/redes-e-fluxos-geograficos/15798-regioes-de-influencia-das-cidades.html?=&t=acesso-ao-produto) elaborou um modelo hierárquico das cidades brasileiras conhecido como REGIC. Vamos utilizar esse modelo em vários dos gráficos a partir de agora.
 
-Começando mostrando quais são os níveis hierárquicos e como se dividem territoralmente no mapa brasileiro. Veja abaixo.
+Começamos mostrando quais são os níveis hierárquicos do REGIC e como se dividem territoralmente no mapa brasileiro. Veja abaixo.
 
 ```{r fig.width=20, fig.height=10, fig.dpi=300}
 #mapa dos municípios brasileiros por nível hierárquico do REGIC
@@ -461,29 +461,31 @@ O último nível hierárquico corresponde aos **Centros Locais**. Aqui a influê
 
 ## As regiões de influência: entradas e saídas
 
+Como as regiões de influência se associam aos fluxos de pacientes? Existem diversas formas de se responder essa pergunta. Vamos começar mostrando dois gráficos, o primeiro que mostra o número de internações para cada grupo hierárquico e o segundo que mostra a proporção de atendimentos nas três classes: entrada, pacientes vindos de outras cidade, saída, pacientes atendidos em outras cidades, e local, pacientes que não precisaram se deslocar. Sempre bom lembrar que os dados trabalhados nessa análise referem-se a uma amostra do total de internações ocorridas no Brasil em 2020.
+
 ```{r fig.width=8, fig.height=4}
 
 #Distribuição de quantidade de internações distribuição de tipos de internação por regic 
 g1<-dataset_analise %>%
   filter(!is.na(nome_nivel_hierarquia.x)) %>%
-  mutate(deslocamento = as.factor(deslocamento)) %>%
-  group_by(deslocamento,nome_nivel_hierarquia.x) %>%
+  #mutate(deslocamento = as.factor(deslocamento)) %>%
+  group_by(nome_nivel_hierarquia.x) %>%
   summarise(
     quantidade_internacoes =n()
   )%>%
-  mutate(tipo_deslocamento = ifelse(deslocamento=="0","local","saída")) %>%
+  #mutate(tipo_deslocamento = ifelse(deslocamento=="0","local","saída")) %>%
   mutate(nome_nivel_hierarquia = reorder(nome_nivel_hierarquia.x, quantidade_internacoes)) %>%
   ungroup() %>%
   bind_rows(
     dataset_analise %>%
       filter(deslocamento == 1,
              !is.na(nome_nivel_hierarquia.y)) %>%
-      mutate(deslocamento = as.factor(deslocamento)) %>%
-      group_by(deslocamento,nome_nivel_hierarquia.y) %>%
+      #mutate(deslocamento = as.factor(deslocamento)) %>%
+      group_by(nome_nivel_hierarquia.y) %>%
       summarise(
         quantidade_internacoes =n()
       )%>%
-      mutate(tipo_deslocamento = "entrada") %>%
+      #mutate(tipo_deslocamento = "entrada") %>%
       mutate(nome_nivel_hierarquia= reorder(nome_nivel_hierarquia.y, quantidade_internacoes)) %>%
       ungroup()
   ) %>%
@@ -542,6 +544,14 @@ g1|g2
 #   cowplot::draw_plot(g2,.5, 0, .5, 1)
 
 ```
+
+No gráfico à esquerda vê-se que os centros locais lideram o ranking de quantidade de atendimentos. A soma das populações dos mais de 4000 municípios desse nível hierárquico ajuda a justificar essa posição. Na verdade a combinação de efeito da quantidade de municípios e de população dos municípios explica grande parte do ranking. A ordem do gráfico da esquerda foi utilizada para o gráfico da direita. É aí onde se encontram os principais achados. 
+
+Vê-se que os centros locais se destacam por ter a maior proporção de atendimentos dos seus residentes em outras cidades. Isso combina com o que se esperava da classificação REGIC onde esses municípios se destacam pela pouca autonomia de gestão. Por outro lado, todos os sub-níveis hierárquicos de metrópoles destacam-se pela grande autonomia no atendimento de seus pacientes.
+
+Em relação a recepção de pacientes de outras cidades, vê-se um forte papel desempenhado por Metrópole, mas, ainda mais importante, destaca-se o papel dos níveis intermediários da hierarquia REGIC, representados principalmente por capitais regionais e centros sub-regionais. Aqui pode-se inferir que os pacientes procuram primeiro o atendimento nos municípios de nível de influência um pouco mais elevada e possivelmente mais próximos ao seu endereço. Em outras palavras, não há necessariamente um fluxo direto para as metrópoles. Um pouco mais adiante vamos mostrar isso de uma forma mais evidente com os fluxos entre as classes hierárquicas. 
+
+Vamos nesse momento para uma outra análise: como fica no mapa do Brasil a informação de entradas e saídas de pacientes? Com os dados de atendimentos calculamos para cada cidade qual o percentual de pacientes que são atendidos em outro municípios. Da mesma forma, calculamos para cada cidade quanto do total de pacientes atendidos em sua rede hospitalar são oriundos de outras cidades. Vamos começar mostrando um gráfico que trabalha com o percentual de saída de pacientes para outras localidades. 
 
 ```{r fig.width=20, fig.height=10, fig.dpi=500}
 
@@ -633,6 +643,8 @@ municipios_seat %>%
 
 
 ```
+
+
 
 ```{r fig.width=20, fig.height=10, fig.dpi=500}
 municipios_seat %>%
@@ -1492,4 +1504,6 @@ dataset_analise %>%
   facet_grid(tipo_analise~.)
 ```
 
-### Análise específica para os arranjos populacionais
+### Um pouco sobre esse dashboard
+
+### Agradecimentos
