@@ -301,7 +301,8 @@ teste<-chisq.test(dataset_analise$nome_nivel_hierarquia.x[dataset_analise$desloc
 
 teste$stdres
 
-
+REGIC_trabalho %>%
+  distinct(nivel_hierarquia, nome_nivel_hierarquia)
 
 ###########Ranking cidades: Valores absolutos
 

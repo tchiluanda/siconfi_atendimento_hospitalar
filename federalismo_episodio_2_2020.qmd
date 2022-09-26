@@ -751,6 +751,8 @@ dataset_analise %>%
 parcats::parcats(p, data_input = aluvial,marginal_histograms = FALSE,labelfont = list(size = 15, color = "black"), sortpaths= "backwards")
 ```
 
+O primeiro fluxo representado na figura acima mostra que os pacientes de municípios categorizados como centros locais se deslocam principalmente, nesta ordem, para: centros sub-regionais B (17,4%), capitais regionais C (16,9%), centros sub-regionais A (15,6%) e só na quarta posição aparecem as metrópoles (13,3%). Com isso não resta dúvida que a hierarquia REGIC é de uma certa forma escalada quando se busca atendimento hospitalar. A metrópoloe possui atratividade para os centros locais, mas é moderada pela próximidade e capacidade de gestão de outros níveis urbanos.  
+
 ```{r fig.width=20, fig.height=10}
 
 ordem_x<- 
@@ -800,9 +802,11 @@ aluvial$saida<- factor(aluvial$saida , levels = unique(ordem_x$saida[order(ordem
   
  p<- easyalluvial::alluvial_wide(aluvial)
  
- parcats::parcats(p, data_input = aluvial,marginal_histograms = FALSE)
+ parcats::parcats(p, data_input = aluvial,marginal_histograms = FALSE, labelfont = list(size = 15, color = "black"))
 
 ```
+
+A figura acima deixa claro que o nível de influência dos centro sub-regionais B concentra-se principalmente nos centros locais para o caso dos pacientes que precisam se deslocar para serem atendidos.
 
 ```{r fig.width=20, fig.height=10}
 
@@ -848,10 +852,14 @@ aluvial$entrada <- factor(aluvial$entrada, levels = unique(ordem_y$entrada[order
   
  p<- easyalluvial::alluvial_wide(aluvial)
  
- parcats::parcats(p, data_input = aluvial,marginal_histograms = FALSE, sortpaths= "backward")
+ parcats::parcats(p, data_input = aluvial,marginal_histograms = FALSE, sortpaths= "backward", labelfont = list(size = 15, color = "black"))
 ```
 
+O gráfico acima mostra o resultado de um teste estatístico, chi-quadrado, que revelou que as metrópoles atraem de forma diferenciada os pacientes de municípios dos níveis centro sub-regionais B, capital regional C e capital regional B. É aqui que se revela a influência das metrópoles: a atração de pacientes de municípios posicionados em níveis intermediários da classificação REGIC.
+
 ## Distâncias percorridas
+
+Ao colocarmos no mapa do Brasil as distâncias percorridas pelos pacientes em busca de atendimentos hospitalar podemos identificar padrões de atração e necessidade de deslocamentos. Vamos começar com um mapa que mostra os deslocamentos observados na amostra para o município de Paraupebas no interior do Pará. Escolhemos esse município pelos deslocamentos de saída com distâncias médias elevadas para o que normalmente se observa. 
 
 ```{r fig.width=20, fig.height=10, fig.dpi=500}
 
@@ -998,6 +1006,10 @@ g1|g2
 
 
 ```
+
+Paraupebas é classificado como Centro sub-regional A. Com o percentual de saída de paciente em torno de 13% consegue atender a maior parte da demanda local. Ainda assim, 112 pacientes da amostra precisaram ser atendidos em outras cidades. Pelo mapa à esquerda observa-se que as distâncias para esse atendimento alcançaram 1250 km, com pacientes sendo atendidos em quatro regiões do Brasil: Norte, Nordeste, Sudeste e Centro-Oeste. Nota-se que a maior parte dos atendimentos, conforme a cor vermelha no mapa à direita, ocorre em Belém e Marabá, ambas cidades localizadas no Pará. Mesmo para esses municípios as distâncias não são pequenas. Marabá, uma capital regional C, fica a aproximadamente 100km, enquanto Belém, a metrópole do estado, está a 370km. Importante notar que essas distâncias foram calculadas usando a [fórmula de haversine](https://pt.wikipedia.org/wiki/F%C3%B3rmula_de_haversine)  e não levam em conta as condições de meio de transporte disponíveis.
+
+A influência de um município pode ser claramente identificada por esses estudos espaciais que envolvem os mapas de distância e quantidade de pacientes atendidos vindos de outros municípios. Vamos ver o caso de Recife, que como já vimos, é a cidade que mais atrai pacientes de outros centros urbanos.
 
 ```{r fig.width=20, fig.height=10, fig.dpi=500}
 
@@ -1169,6 +1181,10 @@ g1|g2
 
 ```
 
+A influência da metrópole Recife pode ser percebida em todo Brasil quando se trata de atendimento hospitalar. Observando novamente no mapa à esquerda as distâncias haversianas, que não levam em consideração as estruturas de transporte disponíveis, Recife atende pacientes que residem a mais de 3000km. A amostra indica que a capital pernambucana recebeu pacientes de quase todas as unidades federativas do país, com exceção de Mato grosso e Goiás. Por outro lado, ao se avaliar o mapa da direita, percebe-se que a maior influência ocorre sobre os municípios da região metropolitana, particularmente Olinda e Jaboatão dos Guararapes. É fácil perceber ainda que há uma extensão de pontos vermelhos que se estende por todo o estado de Pernambuco. Também nota-se a influência sobre estados vizinhos, notadamente Paraíba, Alagoas e Rio Grande do Norte.
+
+Essa influência de Recife era de uma certa forma esperada já que se trata de uma metrópole, porém como já evidenciamos anteriormente há situações de influências importnates associadas a municípios de hierarquias intermediárias. Vamos ver o caso de Barretos no interior de São Paulo.
+
 ```{r fig.width=20, fig.height=10, fig.dpi=500}
 municipio_selecionado<-"350550"
 
@@ -1338,6 +1354,8 @@ library(patchwork)
 
 g1|g2
 ```
+
+Barretos é uma capital regional C. Observa-se no mapa que esse nível intermediário de influência não impediu de alcançar pacientes que residem a mais de 2000 km de distância. Mesmo o número absoluto de pacientes vindos de outras localidades sendo bem inferior a Recife, ainda assim a amostra trabalhada indicou que a influência da cidade só não atingiu os estados do Rio Grande do Norte e Paraíba. E aqui novamente se revela a concentração de atendimentos em cidades mais próximas, principalmente nos estados de São Paulo, Minas Gerais e Goiás.     
 
 ## Chegadas, partidas e as relações com gastos Hospitalares e Ambulatoriais
 
