@@ -349,7 +349,7 @@ dataset_analise %>%
 ###########Ranking cidades: Valores percentuais
 
 
-dados_agrupados<-
+dados_agrupados_exploratoria<-
   dataset_analise %>%
   filter(deslocamento==1) %>%
   mutate(municipio = mun_res_nome.x,
@@ -383,12 +383,12 @@ dados_agrupados<-
   ungroup()
 
 
-dados_agrupados %>%
+dados_agrupados_exploratoria %>%
   summarise(mean(quantidade_deslocamentos_total),
             median(quantidade_deslocamentos_total))
 
 
-dados_agrupados %>%
+dados_agrupados_exploratoria %>%
   ggplot() +
   geom_density(aes(x=quantidade_deslocamentos_total)) +
   scale_x_log10()
@@ -405,7 +405,7 @@ dataset_analise %>%
     quantidade_deslocamentos = n()
   ) %>%
   ungroup() %>%
-  inner_join(dados_agrupados) %>%
+  inner_join(dados_agrupados_exploratoria) %>%
   mutate(mediana_distancia_padronizada =  mediana_distancia_percorrida * quantidade_deslocamentos/ quantidade_deslocamentos_total) %>%
   slice_max(order_by = mediana_distancia_padronizada, n=20) %>%
   mutate(munic_res = reorder(mun_res_nome.x,mediana_distancia_padronizada)) %>%
@@ -424,7 +424,7 @@ dataset_trabalho_graf_mediana<-
     quantidade_deslocamentos = n()
   ) %>%
   ungroup() %>%
-  inner_join(dados_agrupados) %>%
+  inner_join(dados_agrupados_exploratoria) %>%
   mutate(mediana_distancia_padronizada =  mediana_distancia_percorrida * quantidade_deslocamentos/ quantidade_deslocamentos_total)
 
 dataset_analise %>%
@@ -437,7 +437,7 @@ dataset_analise %>%
     quantidade_deslocamentos = n()
   ) %>%
   ungroup() %>%
-  inner_join(dados_agrupados) %>%
+  inner_join(dados_agrupados_exploratoria) %>%
   mutate(municipios_atendidos_padronizado =  municipios_atendidos * quantidade_deslocamentos/ quantidade_deslocamentos_total) %>%
   slice_max(order_by = municipios_atendidos_padronizado, n=20) %>%
   mutate(munic_res = reorder(mun_res_nome.y,municipios_atendidos_padronizado)) %>%
@@ -455,7 +455,7 @@ dataset_trabalho_graf_atracao<-
     quantidade_deslocamentos = n()
   ) %>%
   ungroup() %>%
-  inner_join(dados_agrupados) %>%
+  inner_join(dados_agrupados_exploratoria) %>%
   mutate(municipios_atendidos_padronizado =  municipios_atendidos * quantidade_deslocamentos/ quantidade_deslocamentos_total)
 
 

@@ -21,6 +21,7 @@ library(colorspace)
 library(patchwork)
 library(parcats)
 library(plotly)
+library(DT)
 
 
 ###Dados
@@ -256,6 +257,12 @@ plot_mapa_entrada_saida <- function (tipo_es, mun_es){
   
 }
 
+busca_todos_municipios<- function(){
+  
+  sort(unique(dataset_analise$mun_res_nome.x))
+}
+
+
 ```
 
 REGIC
@@ -269,7 +276,7 @@ selectInput(inputId = "regic_mun", label= "Selecione um ou mais municipios", cho
 ```
 
 
-Column {.tabset}
+Column
 -----------------------------------------------------------------------
 
 ### Mapa dinâmico da divisão do REGIC
@@ -348,14 +355,6 @@ renderPlot({
 })
 ```
 
-
-### Tabela com raio-x dos municípios selecionados
-
-```{r}
-DT::renderDataTable({
-  
-})
-```
 
 
 Panorama de saída e entrada de pacientes
@@ -453,12 +452,12 @@ dataset_analise %>%
   
 aluvial$entrada <- factor(aluvial$entrada, levels = unique(ordem_y$nome_nivel_hierarquia.y[order(ordem_y$quantidade)])) 
   
- p<- easyalluvial::alluvial_wide(aluvial)
+ p<- easyalluvial::alluvial_wide(aluvial, stratum_labels= FALSE)
  
  parcats::parcats(p, 
                   data_input = aluvial,
                   marginal_histograms = input$histograma,
-                  labelfont = list(size = 15, color = "black"),)
+                  labelfont = list(size = 15, color = "black"))
 
   
 })
@@ -472,7 +471,7 @@ Inputs {.sidebar data-width=150}
 -------------------------------------
 
 ```{r}
-selectInput(inputId = "regic_mun_desloc", label= "Selecione um municipio", choices= busca_municipio_regic(),selected = "Recife", multiple = FALSE )
+selectInput(inputId = "regic_mun_desloc", label= "Selecione um municipio", choices= busca_todos_municipios(),selected = "Recife", multiple = FALSE )
 
 sliderInput(inputId= "num_destaque", label = "Número de cidades em destaques", min=1, max = 5, value=1 )
 
@@ -490,7 +489,10 @@ Column {.tabset}
 renderPlot({
   
   codigo_muni<-
-    unique(dataset_analise$munic_res[dataset_analise$mun_res_nome.x==input$regic_mun_desloc])
+    unique(dataset_analise$munic_res[dataset_analise$mun_res_nome.x %in% input$regic_mun_desloc])
+  
+  print(codigo_muni)
+
 
   
   muni_sel<- 
@@ -656,6 +658,7 @@ renderPlot({
   codigo_muni<-
     unique(dataset_analise$codufmun[dataset_analise$mun_res_nome.y==input$regic_mun_desloc])
   
+  print(codigo_muni)
   
   municipio_selecionado<-codigo_muni
   
@@ -704,16 +707,7 @@ renderPlot({
     )
   
   
-  
-  # muni_sel_repel<-
-  #   municipios_seat %>%
-  #   mutate(code_muni = str_sub(as.character(code_muni),1,6)) %>%
-  #   filter(code_muni %in% c("260960", "260790","110150")) %>% #261160-Recife,260790 -Jaboatão, 260960 - Olinda, 260410 - Caruarau, 260545 - Fernando de Noronha, 110150 - Seringueiras-RO
-  #   inner_join(muni_sel)
-  
-  
-  
-  
+
   xmin<- min(min(muni_sel_posicao$mun_res_lon.x), min(muni_sel_posicao$mun_res_lon.y)) -1
   xmax <- max(max(muni_sel_posicao$mun_res_lon.x), max(muni_sel_posicao$mun_res_lon.y)) +1
   
@@ -827,20 +821,20 @@ renderPlot({
 
 ```
 
-Gastos hospitalares
+Gastos hospitalares (sem REGIC)
 =====================================  
 
 Inputs {.sidebar data-width=150} 
 -------------------------------------
 
 ```{r}
-selectInput(inputId = "regic_mun_gasto", label= "Selecione um ou mais municipios", choices= busca_municipio_regic(),selected = "Recife", multiple = TRUE )
+selectInput(inputId = "regic_mun_gasto", label= "Selecione um ou mais municipios", choices= busca_todos_municipios(),selected = "Recife", multiple = TRUE )
 
 
 ```
 
 
-Column {.tabset}
+Column
 -----------------------------------------------------------------------
 
 
@@ -854,8 +848,14 @@ renderPlot({
   
 #agrupamento_municipio_cluster<-readRDS("agrupamento_municipio.RDS")
 
+# codigo_muni<-
+#     unique(dataset_analise$codufmun [dataset_analise$mun_res_nome.y %in% input$regic_mun_gasto])
+
 codigo_muni<-
-    unique(dataset_analise$codufmun[dataset_analise$mun_res_nome.y %in% input$regic_mun_gasto])
+    unique(dataset_analise$munic_res[str_to_lower(dataset_analise$mun_res_nome.x) %in% str_to_lower(input$regic_mun_gasto)])
+
+print(input$regic_mun_gasto)
+print(codigo_muni)
 
 muni_sel_saida<-
 dataset_analise %>%
@@ -916,7 +916,7 @@ dataset_analise %>%
       rename(codufmun=code_muni)
   )  
 
-print(muni_sel_entrada)
+
 
 g2<-
 dataset_analise %>%
@@ -958,15 +958,37 @@ g1|g2
 ```
 
 
+Gastos hospitalares (REGIC)
+=====================================  
+
+Inputs {.sidebar data-width=150} 
+-------------------------------------
+
+```{r}
+selectInput(inputId = "regic_mun_gasto", label= "Selecione um ou mais municipios", choices= busca_municipio_regic(),selected = "Recife", multiple = TRUE )
+
+
+```
+
+
+Column
+-----------------------------------------------------------------------
+
+
 ### Gastos com análise REGIC
+
+
+
 
 ```{r}
 
 renderPlot({
   
   
+
 codigo_muni<-
-    unique(dataset_analise$codufmun[dataset_analise$mun_res_nome.y %in% input$regic_mun_gasto])
+  unique(dataset_analise$munic_res[str_to_lower(dataset_analise$mun_res_nome.x) %in%
+                                     str_to_lower(input$regic_mun_gasto)])
 
   
 #   muni_sel_entrada<-
@@ -994,7 +1016,7 @@ codigo_muni<-
 #   )  
   
   muni_sel_saida<-
-    dataset_analise %>%
+  dataset_analise %>%
   filter(deslocamento == 1,
          perc.x>=0,
          perc.x<=50,
@@ -1081,5 +1103,65 @@ codigo_muni<-
 
   
 })
+```
+
+
+Raio-X dos municípios
+=====================================  
+
+
+
+Column
+-----------------------------------------------------------------------
+
+
+### Tabela de municípios
+
+```{r}
+DT::renderDataTable({
+  
+  selecao<-
+dataset_analise %>%
+  filter(deslocamento == 1,
+         perc.x>=0,
+         perc.x<=50) %>% 
+  distinct(nome_nivel_hierarquia.x,munic_res, perc.x, mun_res_nome.x) %>%
+  inner_join(
+    agrupamento_municipio_cluster %>%
+      rename(munic_res=code_muni)
+  ) %>%
+    rename(codigo_muni=munic_res)
+    
+
+  selecao %>%
+    select(-liquido) %>%
+    arrange(mun_res_nome.x) %>%
+  datatable(
+            colnames = c("Código Município",
+                         "Município",
+                         "% gasto",
+                         "REGIC",
+                         "Entrada de paciente",
+                         "Atendimento local",
+                         "Sáida de paciente",
+                         "% atendimentos em outra cidade",
+                         "% atendimentos de outra cidade",
+                         "Agrupamento"
+                         ), 
+            fillContainer = TRUE,
+            extensions = "Buttons", 
+            rownames = FALSE,
+            filter = 'top',
+            selection= "none",
+            options = list(pageLength = 50 , 
+                           dom = 'Bfrtip',
+                           buttons = c('copy', 'csv', 'excel', 'pdf', 'print')
+                      ) 
+            )%>%
+    formatRound(c(3,8,9),digits = 2, mark=".", dec.mark= ",")%>%
+    formatRound(c(5:7),digits = 0, mark=".", dec.mark= ",")
+  
+})
+
 ```
 

@@ -4,6 +4,7 @@ author: "Fernando Barbalho"
 format: 
   html:
     code-fold: true
+    self-contained: true
 editor: visual
 execute:
   warning: false
@@ -751,62 +752,7 @@ dataset_analise %>%
 parcats::parcats(p, data_input = aluvial,marginal_histograms = FALSE,labelfont = list(size = 15, color = "black"), sortpaths= "backwards")
 ```
 
-O primeiro fluxo representado na figura acima mostra que os pacientes de municípios categorizados como centros locais se deslocam principalmente, nesta ordem, para: centros sub-regionais B (17,4%), capitais regionais C (16,9%), centros sub-regionais A (15,6%) e só na quarta posição aparecem as metrópoles (13,3%). Com isso não resta dúvida que a hierarquia REGIC é de uma certa forma escalada quando se busca atendimento hospitalar. A metrópoloe possui atratividade para os centros locais, mas é moderada pela próximidade e capacidade de gestão de outros níveis urbanos.  
-
-```{r fig.width=20, fig.height=10}
-
-ordem_x<- 
-dataset_analise %>%
-  filter(deslocamento==1,
-         nome_nivel_hierarquia.y %in% c("Centro Sub-Regional B")) %>%
-  group_by(nome_nivel_hierarquia.x) %>%
-  summarise(
-    quantidade = n()
-  ) %>%
-  arrange(quantidade)%>%
-  ungroup() %>%
-   inner_join(
-     de_para_hierarquia %>%
-       rename(nome_nivel_hierarquia.x=nome_nivel_hierarquia,
-              saida_abreviado = nome_abreviado)) %>%
-  arrange(quantidade) %>%
-  mutate(saida = saida_abreviado)
-
-
-
-aluvial<-
-     dataset_analise %>%
-  filter(deslocamento==1,
-         nome_nivel_hierarquia.y %in% c("Centro Sub-Regional B")) %>%
-  mutate(saida = nome_nivel_hierarquia.x,
-         entrada =nome_nivel_hierarquia.y ) %>%
-  select(saida, entrada) 
-
- aluvial<- 
-   aluvial %>%
-   inner_join(
-     de_para_hierarquia %>%
-       rename(saida=nome_nivel_hierarquia,
-              saida_abreviado = nome_abreviado)) %>%
-   inner_join(
-     de_para_hierarquia %>%
-       rename(entrada=nome_nivel_hierarquia,
-              entrada_abreviado = nome_abreviado)) %>%
-   select(saida_abreviado, entrada_abreviado ) %>%
-   rename(saida= saida_abreviado,
-          entrada = entrada_abreviado)
-
-
-   
-aluvial$saida<- factor(aluvial$saida , levels = unique(ordem_x$saida[order(ordem_x$quantidade)])) 
-  
- p<- easyalluvial::alluvial_wide(aluvial)
- 
- parcats::parcats(p, data_input = aluvial,marginal_histograms = FALSE, labelfont = list(size = 15, color = "black"))
-
-```
-
-A figura acima deixa claro que o nível de influência dos centro sub-regionais B concentra-se principalmente nos centros locais para o caso dos pacientes que precisam se deslocar para serem atendidos.
+O primeiro fluxo representado na figura acima mostra que os pacientes de municípios categorizados como centros locais se deslocam principalmente, nesta ordem, para: centros sub-regionais B (17,4%), capitais regionais C (16,9%), centros sub-regionais A (15,6%) e só na quarta posição aparecem as metrópoles (13,3%). Com isso não resta dúvida que a hierarquia REGIC é de uma certa forma escalada quando se busca atendimento hospitalar. A metrópole possui atratividade para os centros locais, mas é moderada pela próximidade e capacidade de gestão de outros níveis urbanos.
 
 ```{r fig.width=20, fig.height=10}
 
@@ -859,7 +805,7 @@ O gráfico acima mostra o resultado de um teste estatístico, chi-quadrado, que 
 
 ## Distâncias percorridas
 
-Ao colocarmos no mapa do Brasil as distâncias percorridas pelos pacientes em busca de atendimentos hospitalar podemos identificar padrões de atração e necessidade de deslocamentos. Vamos começar com um mapa que mostra os deslocamentos observados na amostra para o município de Paraupebas no interior do Pará. Escolhemos esse município pelos deslocamentos de saída com distâncias médias elevadas para o que normalmente se observa. 
+Ao colocarmos no mapa do Brasil as distâncias percorridas pelos pacientes em busca de atendimentos hospitalar podemos identificar padrões de atração e necessidade de deslocamentos. Vamos começar com um mapa que mostra os deslocamentos observados na amostra para o município de Paraupebas no interior do Pará. Escolhemos esse município pelos deslocamentos de saída com distâncias médias elevadas para o que normalmente se observa.
 
 ```{r fig.width=20, fig.height=10, fig.dpi=500}
 
@@ -1007,9 +953,9 @@ g1|g2
 
 ```
 
-Paraupebas é classificado como Centro sub-regional A. Com o percentual de saída de paciente em torno de 13% consegue atender a maior parte da demanda local. Ainda assim, 112 pacientes da amostra precisaram ser atendidos em outras cidades. Pelo mapa à esquerda observa-se que as distâncias para esse atendimento alcançaram 1250 km, com pacientes sendo atendidos em quatro regiões do Brasil: Norte, Nordeste, Sudeste e Centro-Oeste. Nota-se que a maior parte dos atendimentos, conforme a cor vermelha no mapa à direita, ocorre em Belém e Marabá, ambas cidades localizadas no Pará. Mesmo para esses municípios as distâncias não são pequenas. Marabá, uma capital regional C, fica a aproximadamente 100km, enquanto Belém, a metrópole do estado, está a 370km. Importante notar que essas distâncias foram calculadas usando a [fórmula de haversine](https://pt.wikipedia.org/wiki/F%C3%B3rmula_de_haversine)  e não levam em conta as condições de meio de transporte disponíveis.
+Paraupebas é classificado como Centro sub-regional A. Com o percentual de saída de paciente em torno de 13% consegue atender a maior parte da demanda local. Ainda assim, 112 pacientes da amostra precisaram ser atendidos em outras cidades. Pelo mapa à esquerda observa-se que as distâncias para esse atendimento alcançaram 1250 km, com pacientes sendo atendidos em quatro regiões do Brasil: Norte, Nordeste, Sudeste e Centro-Oeste. Nota-se que a maior parte dos atendimentos, conforme a cor vermelha no mapa à direita, ocorre em Belém e Marabá, ambas cidades localizadas no Pará. Mesmo para esses municípios as distâncias não são pequenas. Marabá, uma capital regional C, fica a aproximadamente 100km, enquanto Belém, a metrópole do estado, está a 370km. Importante notar que essas distâncias foram calculadas usando a [fórmula de haversine](https://pt.wikipedia.org/wiki/F%C3%B3rmula_de_haversine) e não levam em conta as condições de meio de transporte disponíveis.
 
-A influência de um município pode ser claramente identificada por esses estudos espaciais que envolvem os mapas de distância e quantidade de pacientes atendidos vindos de outros municípios. Vamos ver o caso de Recife, que como já vimos, é a cidade que mais atrai pacientes de outros centros urbanos.
+Vamos ver agora como fica um exemplo de chegada de pacientes. A influência de um município pode ser claramente identificada por esses estudos espaciais que envolvem os mapas de distância e quantidade de pacientes atendidos vindos de outros municípios. Vamos ver o caso de Recife, que como já vimos, é a cidade que mais atrai pacientes de outros centros urbanos.
 
 ```{r fig.width=20, fig.height=10, fig.dpi=500}
 
@@ -1181,7 +1127,7 @@ g1|g2
 
 ```
 
-A influência da metrópole Recife pode ser percebida em todo Brasil quando se trata de atendimento hospitalar. Observando novamente no mapa à esquerda as distâncias haversianas, que não levam em consideração as estruturas de transporte disponíveis, Recife atende pacientes que residem a mais de 3000km. A amostra indica que a capital pernambucana recebeu pacientes de quase todas as unidades federativas do país, com exceção de Mato grosso e Goiás. Por outro lado, ao se avaliar o mapa da direita, percebe-se que a maior influência ocorre sobre os municípios da região metropolitana, particularmente Olinda e Jaboatão dos Guararapes. É fácil perceber ainda que há uma extensão de pontos vermelhos que se estende por todo o estado de Pernambuco. Também nota-se a influência sobre estados vizinhos, notadamente Paraíba, Alagoas e Rio Grande do Norte.
+A influência da metrópole Recife pode ser percebida em todo Brasil quando se trata de atendimento hospitalar. Observando no mapa à esquerda as distâncias haversianas nota-se que Recife atende pacientes que residem a mais de 3000km. A amostra indica que a capital pernambucana recebeu pacientes de quase todas as unidades federativas do país, com exceção de Mato grosso e Goiás. Por outro lado, ao se avaliar o mapa da direita, percebe-se que a maior influência ocorre sobre os municípios da região metropolitana, particularmente Olinda e Jaboatão dos Guararapes. É fácil perceber ainda que há uma extensão de pontos em tons vermelhos que se estende por todo o estado de Pernambuco. Também identifica-se a influência sobre estados vizinhos, notadamente Paraíba, Alagoas e Rio Grande do Norte.
 
 Essa influência de Recife era de uma certa forma esperada já que se trata de uma metrópole, porém como já evidenciamos anteriormente há situações de influências importnates associadas a municípios de hierarquias intermediárias. Vamos ver o caso de Barretos no interior de São Paulo.
 
@@ -1355,9 +1301,24 @@ library(patchwork)
 g1|g2
 ```
 
-Barretos é uma capital regional C. Observa-se no mapa que esse nível intermediário de influência não impediu de alcançar pacientes que residem a mais de 2000 km de distância. Mesmo o número absoluto de pacientes vindos de outras localidades sendo bem inferior a Recife, ainda assim a amostra trabalhada indicou que a influência da cidade só não atingiu os estados do Rio Grande do Norte e Paraíba. E aqui novamente se revela a concentração de atendimentos em cidades mais próximas, principalmente nos estados de São Paulo, Minas Gerais e Goiás.     
+Barretos é uma capital regional C. Observa-se no mapa que esse nível intermediário de influência não impediu de alcançar pacientes que residem a mais de 2000 km de distância. Mesmo o número absoluto de pacientes vindos de outras localidades sendo bem inferior a Recife, ainda assim a amostra trabalhada indicou que a influência da cidade só não atingiu os estados do Rio Grande do Norte e Paraíba. E aqui novamente se revela a concentração de atendimentos em cidades mais próximas, principalmente nos estados de São Paulo, Minas Gerais e Goiás.
 
 ## Chegadas, partidas e as relações com gastos Hospitalares e Ambulatoriais
+
+Ao chegarmos nesse ponto do texto já identificamos diversos aspectos importantes sobre os fenômenos de deslocamentos de pacientes e as suas relações com o tipo de cidade em que essas pessoas habitam. Agora precisamos voltar à pergunta original que motivou esse trabalho e buscar entender quais são as associações entre gastos municipais com hospitais e os deslocamentos de pacientes.
+
+Na análise, utilizamos uma técnica chamada [agrupamento](https://pt.wikipedia.org/wiki/Clustering). Para o nosso caso buscamos agrupar os municípios com valores parecidos nas duas dimensões já analisadas anteriormente: percentual de saída de paciente e percentual de atendimentos de pacientes de outros municípios. Usando algumas recomendações para definição do número de agrupamentos, nos definimos por quatro tipos de conjuntos distintos de municípios:
+
+-   Entrada moderada: formado por 702 municípios. [Ituporanga-SC](https://cidades.ibge.gov.br/brasil/sc/ituporanga/panorama) é o município que ocupa a posição central do agrupamento[^3]. Seu percentual de atendimentos de paciente de outros municípios é 45% e percentual de saída de pacientes é 29,1%.
+-   Saída fraca: formado por 1017 municípios. O município de [Três Marias-MG](https://cidades.ibge.gov.br/brasil/mg/tres-marias/panorama) é o que melhor caracteriza esse grupo. O percentual de saída é 31% e o de entrada é 7%.
+-   Saída moderada: para esses casos encontramos 1051 municípios. Aqui temos como ponto central a cidade de [São Luiz-RR](https://cidades.ibge.gov.br/brasil/rr/sao-luiz/panorama) com saída de 65,8% dos pacientes e entrada de 6,7%
+-   Saída forte: é o maior grupo, formado por 2799 municípios. A localidade [Vila Propício-GO](https://cidades.ibge.gov.br/brasil/go/vila-propicio/panorama) representa o grupo com 100% de saída de pacientes e 0% de chegada.
+
+[^3]: O agrupamento foi baseado na abordagem k-medoids onde se identifica um ponto no grupo que represeta uma distância central considerando as variáveis utilizadas para a formação dos grupos. No caso: % de entrada e % de saída. Para conhecer um pouco mais sobre k-medoids recomendamos a leitura desse [artigo](https://en.wikipedia.org/wiki/K-medoids) na wikipedia.
+
+O proximo passo foi identificar como os percentuais de gastos em hospitais se associam a cada um dos grupos[^4]. A figura logo abaixo nos permite identificar algumas conclusões.
+
+[^4]: Tal como os dados sobre gastos informados logo na primeira seção do texto, aqui também utilizamos as informações vindas do SICONFI. A diferença é que para esse caso usamos uma [biblioteca em R](https://github.com/tchiluanda/siconfiBD) desenvolvida pela STN que facilita o consumo automatizado dos dados anuais de municípios.
 
 ```{r fig.width=20, fig.height=10, fig.dpi=500}
 agrupamento_municipio_cluster<-readRDS("agrupamento_municipio.RDS")
@@ -1430,6 +1391,16 @@ g1|g2
 
 ```
 
+Cada ponto colorido dos gráficos é um município brasileiro. As cores dos pontos representam o percentual de sáida de pacientes, para o gráfico esquerdo, e o percentual de atendimentos de pacientes de outras cidades, para o gráfico direito. No eixo horizontal dos dois gráficos vemos os grupos e no eixo vertical o percentual de gastos com atendimento hospitalar e ambulatorial. Os quadrados que aparecem nos gráficos são conhecidos como box-plot. A principal função do box-plot é identificar o intervalo onde ficam 75% dos valores intermediários da dimensão que queremos analisar. Esse intervalo é dado pela área entre a primeira e a terceira retas horizontais do quadrado. A reta horizontal do meio representa a mediana. Em outras palavras, para o caso em análise, 50% dos municípios apresentam proporções de gastos com atendimento hospitalar e ambulatorial menores do que o valor assinalado pela reta da mediana em cada um dos box-plots representados.
+
+Feita a apresentação dos gráficos fica fácil perceber que a conclusão mais importante da associação entre gastos e grupos de entrada e saída de pacientes. Quando se analisa as saídas de pacientes, no gráfico à esquerda, descobrimos que o grupo **saída forte** apresenta mediana de gastos proporcionais com hospitais muito inferior aos demais grupos. Além disso, o grupo **entrada forte** apresenta a mediana destacadamente superior aos demais grupos.
+
+O gráfico do lado direito traz sinais contraditórios. Os grupos **entrada forte** e **saída forte** apresentam medianas parecidas e maiores do que as dos outros dois grupos. Nesse caso não é possível chegar-se a conclusões sobre o impacto da despesa com hospitais e atração de pacientes.
+
+Observando o quadro geral dos dois gráficos e contrastando com nossa inquietação de pesquisa inicial, podemos concluir que há uma forte associação inversa entre proporções de gastos com hospitais e necessidade de deslocamento de pacientes para outros municípios.
+
+É possível repetir essa análise com cortes pelos níveis do REGIC. Veja a imagem abaixo.
+
 ```{r fig.width=20, fig.height=10, fig.dpi=500}
 dataset_analise %>%
   filter(deslocamento == 1,
@@ -1484,6 +1455,28 @@ dataset_analise %>%
   facet_grid(tipo_analise~.)
 ```
 
-### Um pouco sobre esse dashboard
+Novamente temos dois gráficos com pontos e box-plot. A diferença é que no eixo horizontal estão apresentados os níveis REGIC e as cores mostram quais a quais grupos os municípios estão associados, conforme pode ser lido na legenda.
+
+Mais uma vez a análise mais importante é sobre o gráfico que mostra as saídas de pacientes. Nesse caso vemos uma forte associação dos centros locais com a cor do grupo **saída forte.** A outra observação**,** ainda mais importante para o nosso trabalho, é a percepção de que a mediana do nível hierárquico mais inferior do REGIC é bem menor que a dos demais níveis. Com isso podemos concluir que os centros locais são fortemente associados a baixos gastos proporcionais com atendimento hospitalar. Podemos notar ainda que os outros grupos, com exceção do Centro de Zona B, predominam municípios dos grupos **entrada forte** e **saída fraca**.
+
+Recuperando os achados anteriores dos fluxos entre níveis hierárquicos do Regic, podemos concluir que os deslocamentos de pacientes predominam em cidades que se caracterizam por baixa autonomia e baixos gastos proporcionais em hospitais. O destino desses pacientes são outras cidades com mais possibilidades de atendimento derivados de maiores gastos em infraestruturas de saúde e que apresentam melhores estruturas de gestão.
+
+### Para finalizar
+
+Vimos que o Regic é um bom preditor dos deslocamentos de pacientes entre municípios de diferentes níveis, tanto para a saída como para a chegada de pacientes. Percebemos também que os níveis superiores da hierarquia estão associados a forte autonomia hospitalar. Não foi difiícil perceber que esses fenômenos levam muitas vezes a deslocamentos de centenas ou milhares de quilômetros para os pacientes e seus familiares.
+
+Já no final do texto percebemos que os gastos hospitalares estão associados inversamente a um grande percentual de atendimentos fora dos municípios de residência e isso se reflete na hierarquia Regic onde percebemos que os centros locais no geral gastam bem menos que os outros municípios.
+
+É preciso dizer, porém, que há motivações para que esse tipo de desenho ocorra. Talvez não necessariamente de forma tão acentuada. A organização do SUS prevê **regiões de saúde** formadas por agrupamentos de municípios. Esse tipo de arranjo tem entre outros objetivos a busca da racionalização dos gastos, otimização de recursos e eficiência na rede de atenção[^5]. Essa caracterização do SUS prevê fluxos de pacientes e pode influenciar a decisão alocativa de orçamento municipal. O nosso trabalho não tem a intenção de mostrar as redes de causalidade que geram o quadro aqui apresentado. Acreditamos que essa é uma tarefa para equipes mais especializadas sobre o tema de saúde pública. Em todo caso deixamos aqui nossas análises, com códigos e dados abertos [^6], de forma que possam ser úteis para futuros trabalhos onde outros aspectos do atendimento hospitalar sejam investigados
+
+[^5]: Para conhecer mais sobre as diretrizes gerais sobre regiões de saúde, leia a [resolução Nº 1, de 29 de setembro de 2011](https://bvsms.saude.gov.br/bvs/saudelegis/cit/2011/res0001_29_09_2011.html) do Ministério da Sáude.
+
+[^6]: Os códigos utilizados, incluindo os processos de captura dos dados das fontes primárias estão disponíveis no [github](https://github.com/tchiluanda/siconfi_atendimento_hospitalar).
+
+### Um pouco sobre o painel
+
+Provavelmente você está lendo esse texto a partir de um painel produzido pela Secretaria do Tesouro Nacional. Além desse material o painel conta com páginas que de uma certa forma permitem localizar os municípios dentro dos quadros analíticos explorados ao longo do texto. Convidamos o leitor para fazer a navegação por entre as abas disponibilizadas, fazer filtros, baixar dados e capturar gráficos para outras ressignficações dos dados sobre atendimentos hospitares no Brasil e suas relações com execuções orçamentárias municipais.
 
 ### Agradecimentos
+
+A equipe que produziu esse trabalho agradece a colaboração especial da epidemiologista [Beatriz Jardim](https://www.linkedin.com/in/beatrizjardim/) que identificou pontos importantes para as nossas análises e nos explicou como funcionam as áreas de saúde do SUS.

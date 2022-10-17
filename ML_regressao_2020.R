@@ -248,6 +248,8 @@ agrupamento_municipio$cluster_4_k<- factor(model_cluster_4_k$clustering,
                                                       "saída moderada",
                                                       "saída forte") )
 
+agrupamento_municipio$id_agrupamento<- seq(1,nrow(agrupamento_municipio),1)
+
 saveRDS(agrupamento_municipio,file="agrupamento_municipio_2020.RDS")
 
 agrupamento_municipio %>%
