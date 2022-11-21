@@ -12,6 +12,22 @@ execute:
   cache: true
 ---
 
+<style>
+div.comment {
+background-color: #DBDBDB;
+padding: 10px;
+border: 1px solid black;
+margin-left: 25px;
+border-radius: 5px;
+font-style: italic;
+}
+
+</style>
+
+
+
+
+
 ```{r setup}
 library(tidyverse)
 library(geobr)
@@ -447,7 +463,12 @@ municipios_seat %>%
 
 ```
 
-Como se vê na figura acima, o REGIC divide as cidades do Brasil em onze níveis e sub-níveis hierárquicos. Da esquerda para a direita, de cima para baixo, é possível perceber a gradação hierárquica. No primeiro nível da hierarquia estão as **Metrópoles**. Conforme o [IBGE](https://biblioteca.ibge.gov.br/visualizacao/livros/liv101728_folder.pdf), tratam-se "\[d\]os 15 principais centros urbanos, dos quais todas as Cidades existentes no País recebem influência direta, seja de uma ou mais Metrópoles simultaneamente. A região de influência dessas centralidades é ampla e cobre toda a extensão territorial do País, com áreas de sobreposição em determinados contatos".
+Como se vê na figura acima, o REGIC divide as cidades do Brasil em onze níveis e sub-níveis hierárquicos. Da esquerda para a direita, de cima para baixo, é possível perceber a gradação hierárquica. 
+
+**Algumas palavras a mais sobre o REGIC**
+<div class="comment">
+No primeiro nível da hierarquia estão as **Metrópoles**. Conforme o [IBGE](https://biblioteca.ibge.gov.br/visualizacao/livros/liv101728_folder.pdf), tratam-se "\[d\]os 15 principais centros urbanos, dos quais todas as Cidades existentes no País recebem influência direta, seja de uma ou mais Metrópoles simultaneamente. A região de influência dessas centralidades é ampla e cobre toda a extensão territorial do País, com áreas de sobreposição em determinados contatos".
+
 
 Quando se trata de metrópoles temos no maior nível hierárquico o municípios de São Paulo como a única **grande metrópole nacional**. Brasília e Rio de Janeiro, vêm em seguida como as **metrópoles nacionais.** Por fim, existem doze **metrópoles**, representadas por 11 capitais mais influentes e Campinas. Observa-se nos mapas acima que todos as cidades sedes das metrópoles possuem mais de 500 mil habitantes, destacadas na cor amarela, com exceção de Vitória.
 
@@ -466,6 +487,7 @@ No quarto nível hierárquico estão os **Centros de Zona**. Reune municípios q
 O último nível hierárquico corresponde aos **Centros Locais**. Aqui a influência restringe-se aos próprios limites territoriais. Os municípios não costumam ser destino principal de nenhuma outra cidade. Além disso, caracterizam-se pela fraca centralidade de gestão e com grande dependência de centros de maior hierarquia. Os centros locais representam a grande maioria dos municípios brasileiros: 4037 centros urbanos. A média populacional é de 12,5 mil habitantes.
 
 É importante observar o conceito de arranjo populacional que é utilizado pelo IBGE para determinar as cidades e suas áreas de influência. Todas as metrópoles e ainda algumas capitais regionais são mapeadas como arranjos populacionais que envolvem mais de um município. Dessa forma quando se fala em uma cidade que é núcleo desses arranjos, a referência para o REGIC se expande para todos os municípios que englobam o arranjo. Por exemplo, para o REGIC, Recife engloba não só os limites da capital como também os da sua região metropolitana. Da mesma forma quando se fala em Juazeiro do Norte-CE, engloba-se também Crato e Barbalha, que estão no mesmo arranjo populacional. Para a nossa análise, apesar de usarmos o REGIC como referência, utilizamos os dados de fluxo de paciente apenas da cidade núcleo dos arranjos populacionais. Entendemos que essa opção não traz prejuízos analíticos para os objetivos deste trabalho.
+</div>
 
 ## As regiões de influência: entradas e saídas
 

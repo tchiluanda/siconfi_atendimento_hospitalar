@@ -22,6 +22,8 @@ library(patchwork)
 library(parcats)
 library(plotly)
 library(DT)
+library(readr)
+library(easyalluvial)
 
 
 ###Dados
@@ -30,6 +32,9 @@ dataset_analise <- readRDS("dataset_analise_2020.RDS")
 agrupamento_municipio_cluster<-readRDS("agrupamento_municipio_2020.RDS")
 
 load("dados_auxiliares.RData")
+
+de_para_hierarquia <- read_delim("de_para_hierarquia.csv", 
+    delim = ";", escape_double = FALSE, trim_ws = TRUE)
 
 
 pop_municipios$pop_cut<- cut(pop_municipios$populacao, 
@@ -273,6 +278,27 @@ Inputs {.sidebar data-width=150}
 
 ```{r}
 selectInput(inputId = "regic_mun", label= "Selecione um ou mais municipios", choices= busca_municipio_regic(),selected = busca_municipio_regic()[1], multiple = TRUE )
+
+# Create placeholder for the downloadButton
+uiOutput("downloadUI_mapa_regic")
+# Create the actual downloadButton
+
+output$downloadUI_mapa_regic <- renderUI( {
+  downloadButton("download_mapa_regic","Download", style = "width:100%;")
+})
+
+
+output$download_mapa_regic<- downloadHandler(
+  filename = function() {
+    paste('dados_mapa_regic',  '.csv', sep='')
+  },
+  content = function(file) {
+
+    dados_mapa_regic <- graph_mapa_regic$data
+    write.table(dados_mapa_regic, file, sep = ",",row.names = FALSE,fileEncoding = "UTF-8",dec=".")
+  }
+)
+
 ```
 
 
@@ -304,8 +330,9 @@ renderPlot({
     muni_sel %>%
     filter(!(nivel_hierarquia %in% c("1A","1B","1C","2A")))
 
+  
     
-
+  graph_mapa_regic<<-
   municipios_seat %>%
   inner_join(
     REGIC_trabalho %>%
@@ -352,6 +379,9 @@ renderPlot({
     
   )+
   facet_wrap(nome_nivel_hierarquia_ordenado~.)
+  
+  
+  graph_mapa_regic
 })
 ```
 
@@ -365,6 +395,33 @@ Inputs {.sidebar data-width=150}
 
 ```{r}
 selectInput(inputId = "regic_mun_io", label= "Selecione um ou mais municipios", choices= busca_municipio_regic(),selected = busca_municipio_regic()[1], multiple = TRUE )
+
+# Create placeholder for the downloadButton
+uiOutput("downloadUI_mapa_es_paciente")
+# Create the actual downloadButton
+
+output$downloadUI_mapa_es_paciente <- renderUI( {
+  downloadButton("download_mapa_es_paciente","Download", style = "width:100%;")
+})
+
+
+output$download_mapa_es_paciente<- downloadHandler(
+  filename = function() {
+    paste('dados_mapa_es_paciente',  '.csv', sep='')
+  },
+  content = function(file) {
+
+    dados_mapa_es_paciente <- 
+      bind_rows(
+        plot_saida_paciente$data,
+        plot_entrada_paciente$data
+      )
+      
+    write.table(dados_mapa_es_paciente, file, sep = ",",row.names = FALSE,fileEncoding = "UTF-8",dec=".")
+  }
+)
+
+
 ```
 
 
@@ -379,7 +436,10 @@ Column
   
 renderPlot({
   
+  plot_saida_paciente<<-
   plot_mapa_entrada_saida("s",input$regic_mun_io)
+  
+  plot_saida_paciente
   
 })
 
@@ -397,7 +457,11 @@ Column
 ```{r}
   
 renderPlot({
+  
+  plot_entrada_paciente<<-
   plot_mapa_entrada_saida("e",input$regic_mun_io)
+  
+  plot_entrada_paciente
 })
 
 ```
@@ -417,6 +481,28 @@ selectInput(inputId = "regic_hierarquia_e", label= "Selecione uma ou mais hierar
 
 checkboxInput(inputId = "histograma",label = "Exibe histograma", value = TRUE)
 
+# Create placeholder for the downloadButton
+uiOutput("downloadUI_aluvial")
+# Create the actual downloadButton
+
+output$downloadUI_aluvial <- renderUI( {
+  downloadButton("download_aluvial","Download", style = "width:100%;")
+})
+
+
+output$download_aluvial<- downloadHandler(
+  filename = function() {
+    paste('dados_aluvial',  '.csv', sep='')
+  },
+  content = function(file) {
+
+    dados_aluvial <- dado_grafico_aluvial
+
+    write.table(dados_aluvial, file, sep = ",",row.names = FALSE,fileEncoding = "UTF-8",dec=".")
+  }
+)
+
+
 ```
 
 
@@ -429,35 +515,75 @@ Column
 
 ```{r}
 render_parcats({
-  
+
+hierarquia_saida<- input$regic_hierarquia_s
+hierarquia_entrada <- input$regic_hierarquia_e
+    
+#hierarquia_saida<- "Centro Local"
+#hierarquia_entrada <- busca_hierarquia_regic()
+
+
 ordem_y<- 
 dataset_analise %>%
   filter(deslocamento==1,
-         nome_nivel_hierarquia.x %in% input$regic_hierarquia_s) %>%
+         nome_nivel_hierarquia.x == hierarquia_saida,
+         !(is.na(nome_nivel_hierarquia.y))) %>%
   group_by(nome_nivel_hierarquia.y) %>%
   summarise(
     quantidade = n()
-  ) %>%
-  arrange(quantidade) 
+  )  %>%
+  ungroup() %>%
+   inner_join(
+     de_para_hierarquia %>%
+       rename(nome_nivel_hierarquia.y=nome_nivel_hierarquia,
+              entrada_abreviado = nome_abreviado)) %>%
+  arrange(quantidade) %>%
+  mutate(entrada = entrada_abreviado)
+
+
 
  aluvial<-
      dataset_analise %>%
   filter(deslocamento==1,
-         nome_nivel_hierarquia.x == input$regic_hierarquia_s,
-         nome_nivel_hierarquia.y == input$regic_hierarquia_e) %>%
+         nome_nivel_hierarquia.x %in% hierarquia_saida,
+         nome_nivel_hierarquia.y %in% hierarquia_entrada,
+         !(is.na(nome_nivel_hierarquia.y))) %>%
   mutate(saída = nome_nivel_hierarquia.x,
-         entrada =nome_nivel_hierarquia.y,20) %>%
+         entrada =nome_nivel_hierarquia.y ) %>%
   select(saída, entrada) 
-  
-  
-aluvial$entrada <- factor(aluvial$entrada, levels = unique(ordem_y$nome_nivel_hierarquia.y[order(ordem_y$quantidade)])) 
-  
- p<- easyalluvial::alluvial_wide(aluvial, stratum_labels= FALSE)
  
- parcats::parcats(p, 
-                  data_input = aluvial,
-                  marginal_histograms = input$histograma,
-                  labelfont = list(size = 15, color = "black"))
+
+ aluvial<- 
+   aluvial %>%
+   inner_join(
+     de_para_hierarquia %>%
+       rename(saída=nome_nivel_hierarquia,
+              saida_abreviado = nome_abreviado)) %>%
+   inner_join(
+     de_para_hierarquia %>%
+       rename(entrada=nome_nivel_hierarquia,
+              entrada_abreviado = nome_abreviado)) %>%
+   select(saida_abreviado, entrada_abreviado ) %>%
+   rename(saída= saida_abreviado,
+          entrada = entrada_abreviado)
+ 
+ aluvial$entrada <- factor(aluvial$entrada, levels = unique(ordem_y$entrada[order(ordem_y$quantidade)])) 
+
+ dado_grafico_aluvial<<- aluvial
+
+ p<-
+  alluvial_wide( data = aluvial, 
+                max_variables = 2, 
+                fill_by = 'first_variable') 
+
+
+parcats::parcats(p, 
+                 data_input = aluvial,
+                 marginal_histograms = input$histograma,
+                 labelfont = list(size = 15, color = "black"), 
+                 sortpaths= "backwards")
+  
+  
 
   
 })
@@ -474,6 +600,58 @@ Inputs {.sidebar data-width=150}
 selectInput(inputId = "regic_mun_desloc", label= "Selecione um municipio", choices= busca_todos_municipios(),selected = "Recife", multiple = FALSE )
 
 sliderInput(inputId= "num_destaque", label = "Número de cidades em destaques", min=1, max = 5, value=1 )
+
+# Create placeholder for the downloadButton
+uiOutput("downloadUI_mapa_s_cidade")
+# Create the actual downloadButton
+
+output$downloadUI_mapa_s_cidade <- renderUI( {
+  downloadButton("download_mapa_s_cidade","Saída", style = "width:100%;")
+})
+
+
+output$download_mapa_s_cidade<- downloadHandler(
+  filename = function() {
+    paste('dados_mapa_s_cidade',  '.csv', sep='')
+  },
+  content = function(file) {
+
+    dados_mapa_s_cidade <- 
+      bind_rows(
+        g1_saida$data,
+        g2_saida$data
+      )
+      
+    write.table(dados_mapa_s_cidade, file, sep = ",",row.names = FALSE,fileEncoding = "UTF-8",dec=".")
+  }
+)
+
+
+# Create placeholder for the downloadButton
+uiOutput("downloadUI_mapa_e_cidade")
+# Create the actual downloadButton
+
+output$downloadUI_mapa_e_cidade <- renderUI( {
+  downloadButton("download_mapa_e_cidade","Entrada", style = "width:100%;")
+})
+
+
+output$download_mapa_e_cidade<- downloadHandler(
+  filename = function() {
+    paste('dados_mapa_e_cidade',  '.csv', sep='')
+  },
+  content = function(file) {
+
+    dados_mapa_e_cidade <- 
+      bind_rows(
+        g1_entrada$data,
+        g2_entrada$data
+      )
+      
+    write.table(dados_mapa_e_cidade, file, sep = ",",row.names = FALSE,fileEncoding = "UTF-8",dec=".")
+  }
+)
+
 
 ```
 
@@ -548,7 +726,7 @@ renderPlot({
   ymin<- min(min(muni_sel_posicao$mun_res_lat.x), min(muni_sel_posicao$mun_res_lat.y)) -1
   ymax <- max(max(muni_sel_posicao$mun_res_lat.x), max(muni_sel_posicao$mun_res_lat.y)) +1
   
-  g1<-
+  g1_saida<<-
     municipios_seat %>%
     mutate(code_muni = str_sub(as.character(code_muni),1,6)) %>%
     inner_join(
@@ -601,7 +779,7 @@ renderPlot({
 
 
   
-  g2<-
+  g2_saida<<-
     municipios_seat %>%
     mutate(code_muni = str_sub(as.character(code_muni),1,6)) %>%
     inner_join(
@@ -640,7 +818,7 @@ renderPlot({
     )
   
   
-  g1|g2
+  g1_saida|g2_saida
   
   
 })
@@ -715,7 +893,7 @@ renderPlot({
   ymin<- min(min(muni_sel_posicao$mun_res_lat.x), min(muni_sel_posicao$mun_res_lat.y)) -1
   ymax <- max(max(muni_sel_posicao$mun_res_lat.x), max(muni_sel_posicao$mun_res_lat.y)) +1
   
-  g1<-
+  g1_entrada<<-
     municipios_seat %>%
     mutate(code_muni = str_sub(as.character(code_muni),1,6)) %>%
     inner_join(
@@ -769,7 +947,7 @@ renderPlot({
   
   set.seed(1972)
   
-  g2<-
+  g2_entrada<<-
     municipios_seat %>%
     mutate(code_muni = str_sub(as.character(code_muni),1,6)) %>%
     inner_join(
@@ -813,7 +991,7 @@ renderPlot({
   
   library(patchwork)
   
-  g1|g2
+  g1_entrada|g2_entrada
   
   
 })
@@ -846,10 +1024,6 @@ Column
 
 renderPlot({
   
-#agrupamento_municipio_cluster<-readRDS("agrupamento_municipio.RDS")
-
-# codigo_muni<-
-#     unique(dataset_analise$codufmun [dataset_analise$mun_res_nome.y %in% input$regic_mun_gasto])
 
 codigo_muni<-
     unique(dataset_analise$munic_res[str_to_lower(dataset_analise$mun_res_nome.x) %in% str_to_lower(input$regic_mun_gasto)])
@@ -991,30 +1165,7 @@ codigo_muni<-
                                      str_to_lower(input$regic_mun_gasto)])
 
   
-#   muni_sel_entrada<-
-# dataset_analise %>%
-#   filter(deslocamento == 1,
-#          perc.y>=0,
-#          perc.y<=50) %>% 
-#   distinct(nome_nivel_hierarquia.y,codufmun, perc.y, mun_res_nome.y) %>%
-#   inner_join(
-#     agrupamento_municipio_cluster %>%
-#       filter(code_muni %in% codigo_muni) %>%
-#       rename(codufmun=code_muni)
-#   )  
 
-#   muni_sel_saida<-
-# dataset_analise %>%
-#   filter(deslocamento == 1,
-#          perc.x>=0,
-#          perc.x<=50) %>% 
-#   distinct(nome_nivel_hierarquia.x,munic_res, perc.x, mun_res_nome.x) %>%
-#   inner_join(
-#     agrupamento_municipio_cluster %>%
-#       filter(code_muni %in% codigo_muni) %>%
-#       rename(munic_res=code_muni)
-#   )  
-  
   muni_sel_saida<-
   dataset_analise %>%
   filter(deslocamento == 1,
