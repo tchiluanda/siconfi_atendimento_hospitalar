@@ -1,6 +1,5 @@
 ---
 title: "Internações hospitalares e deslocamentos"
-author: "Fernando Barbalho"
 format: 
   html:
     code-fold: true
@@ -24,6 +23,12 @@ font-style: italic;
 
 </style>
 
+```{r}
+knitr::include_graphics("wilker-lauriano-9dkdy9m0YXE-unsplash.jpg")
+```
+
+
+Foto por <a href="https://unsplash.com/@willph?utm_source=unsplash&utm_medium=referral&utm_content=creditCopyText">Wilker Lauriano</a> on <a href="https://unsplash.com/s/photos/hospital-brazil?utm_source=unsplash&utm_medium=referral&utm_content=creditCopyText">Unsplash</a>
 
 
 
@@ -486,36 +491,32 @@ No quarto nível hierárquico estão os **Centros de Zona**. Reune municípios q
 
 O último nível hierárquico corresponde aos **Centros Locais**. Aqui a influência restringe-se aos próprios limites territoriais. Os municípios não costumam ser destino principal de nenhuma outra cidade. Além disso, caracterizam-se pela fraca centralidade de gestão e com grande dependência de centros de maior hierarquia. Os centros locais representam a grande maioria dos municípios brasileiros: 4037 centros urbanos. A média populacional é de 12,5 mil habitantes.
 
-É importante observar o conceito de arranjo populacional que é utilizado pelo IBGE para determinar as cidades e suas áreas de influência. Todas as metrópoles e ainda algumas capitais regionais são mapeadas como arranjos populacionais que envolvem mais de um município. Dessa forma quando se fala em uma cidade que é núcleo desses arranjos, a referência para o REGIC se expande para todos os municípios que englobam o arranjo. Por exemplo, para o REGIC, Recife engloba não só os limites da capital como também os da sua região metropolitana. Da mesma forma quando se fala em Juazeiro do Norte-CE, engloba-se também Crato e Barbalha, que estão no mesmo arranjo populacional. Para a nossa análise, apesar de usarmos o REGIC como referência, utilizamos os dados de fluxo de paciente apenas da cidade núcleo dos arranjos populacionais. Entendemos que essa opção não traz prejuízos analíticos para os objetivos deste trabalho.
+É importante observar o conceito de arranjo populacional que é utilizado pelo IBGE para determinar as cidades e suas áreas de influência. Todas as metrópoles e ainda algumas capitais regionais são mapeadas como arranjos populacionais que envolvem mais de um município. Dessa forma quando se fala em uma cidade que é núcleo desses arranjos, a referência para o REGIC se expande para todos os municípios que englobam o arranjo. Por exemplo, para o REGIC, Recife engloba não só os limites da capital como também os da sua região metropolitana. Da mesma forma quando se fala em Juazeiro do Norte-CE, engloba-se também Crato e Barbalha, que estão no mesmo arranjo populacional. Para a nossa análise, apesar de usarmos o REGIC como referência, utilizamos os dados de fluxo de paciente apenas da cidade núcleo dos arranjos populacionais. Entendemos que essa opção não traz prejuízos analíticos para os objetivos deste trabalho
 </div>
 
 ## As regiões de influência: entradas e saídas
 
-Como as regiões de influência se associam aos fluxos de pacientes? Existem diversas formas de se responder essa pergunta. Vamos começar mostrando dois gráficos, o primeiro que mostra o número de internações para cada grupo hierárquico e o segundo que mostra a proporção de atendimentos nas três classes: entrada, pacientes vindos de outras cidade; saída, pacientes atendidos em outras cidades; e local, pacientes que não precisaram se deslocar. Sempre bom lembrar que os dados trabalhados nessa análise referem-se a uma amostra do total de internações ocorridas no Brasil em 2020.
+Como as regiões de influência se associam aos fluxos de pacientes? Existem diversas formas de se responder essa pergunta. Vamos começar mostrando três gráficos, o primeiro evidencia o número de internações para cada grupo hierárquico, o segundo indica como a demanda dos pacientes é atendida de acordo com o local de internação: hospitais locais ou outros municípios. Por fim, o terceiro gráfico revela a origem dos pacientes nos atendimentos hospitalares: pacientes locais ou pacientes vindos de outros municípios. Sempre bom lembrar que os dados trabalhados nessa análise referem-se a uma amostra do total de internações ocorridas no Brasil em 2020.
 
-```{r fig.width=8, fig.height=4}
+```{r fig.width=8, fig.height=8}
 
 #Distribuição de quantidade de internações distribuição de tipos de internação por regic 
 g1<-dataset_analise %>%
   filter(!is.na(nome_nivel_hierarquia.x)) %>%
-  #mutate(deslocamento = as.factor(deslocamento)) %>%
   group_by(nome_nivel_hierarquia.x) %>%
   summarise(
     quantidade_internacoes =n()
   )%>%
-  #mutate(tipo_deslocamento = ifelse(deslocamento=="0","local","saída")) %>%
   mutate(nome_nivel_hierarquia = reorder(nome_nivel_hierarquia.x, quantidade_internacoes)) %>%
   ungroup() %>%
   bind_rows(
     dataset_analise %>%
       filter(deslocamento == 1,
              !is.na(nome_nivel_hierarquia.y)) %>%
-      #mutate(deslocamento = as.factor(deslocamento)) %>%
       group_by(nome_nivel_hierarquia.y) %>%
       summarise(
         quantidade_internacoes =n()
       )%>%
-      #mutate(tipo_deslocamento = "entrada") %>%
       mutate(nome_nivel_hierarquia= reorder(nome_nivel_hierarquia.y, quantidade_internacoes)) %>%
       ungroup()
   ) %>%
@@ -528,7 +529,12 @@ g1<-dataset_analise %>%
     panel.grid = element_blank(),
     axis.title.x = element_blank(),
     axis.title.y = element_blank(),
+  ) +
+  labs(
+    title = "Demanda de internação"
   )
+
+
 
 
 #Distribuição de quantidade de internações distribuição de tipos de internação por regic 
@@ -539,7 +545,48 @@ g2<-dataset_analise %>%
   summarise(
     quantidade_internacoes =n()
   )%>%
-  mutate(tipo_deslocamento = ifelse(deslocamento=="0","local","saída")) %>%
+  mutate(tipo_deslocamento = ifelse(deslocamento=="0","Hosítais locais","Outros municípios")) %>%
+  mutate(nome_nivel_hierarquia = reorder(nome_nivel_hierarquia.x, quantidade_internacoes)) %>%
+  ungroup()  %>%
+  # bind_rows(
+  #   dataset_analise %>%
+  #     filter(deslocamento == 1,
+  #            !is.na(nome_nivel_hierarquia.y)) %>%
+  #     mutate(deslocamento = as.factor(deslocamento)) %>%
+  #     group_by(deslocamento,nome_nivel_hierarquia.y) %>%
+  #     summarise(
+  #       quantidade_internacoes =n()
+  #     )%>%
+  #     mutate(tipo_deslocamento = "chegada") %>%
+  #     mutate(nome_nivel_hierarquia= reorder(nome_nivel_hierarquia.y, quantidade_internacoes)) %>%
+  #     ungroup()
+  # ) %>%
+  ggplot() +
+  scale_fill_discrete_qualitative(palette = "Dark 3")+ 
+  geom_col(aes(x=quantidade_internacoes, y=fct_reorder(nome_nivel_hierarquia, quantidade_internacoes,sum), fill=str_wrap(tipo_deslocamento,10)), position="fill")+
+  theme_light() +
+  theme(
+    panel.background = element_rect(fill = "#15202B"),
+    panel.grid = element_blank(),
+    axis.title.x = element_blank(),
+    axis.title.y = element_blank(),
+    legend.title = element_blank()
+  ) +
+  labs(
+    title= "Pacientes: Local de atendimento"
+  )  
+
+
+#Distribuição de quantidade de internações distribuição de tipos de internação por regic 
+g3<-dataset_analise %>%
+  filter(!is.na(nome_nivel_hierarquia.x),
+         deslocamento == 0,) %>%
+  mutate(deslocamento = as.factor(deslocamento)) %>%
+  group_by(deslocamento,nome_nivel_hierarquia.x) %>%
+  summarise(
+    quantidade_internacoes =n()
+  )%>%
+  mutate(tipo_deslocamento = ifelse(deslocamento=="0","locais","De outros muncípios")) %>%
   mutate(nome_nivel_hierarquia = reorder(nome_nivel_hierarquia.x, quantidade_internacoes)) %>%
   ungroup() %>%
   bind_rows(
@@ -551,13 +598,13 @@ g2<-dataset_analise %>%
       summarise(
         quantidade_internacoes =n()
       )%>%
-      mutate(tipo_deslocamento = "chegada") %>%
+      mutate(tipo_deslocamento = "De outros muncípios") %>%
       mutate(nome_nivel_hierarquia= reorder(nome_nivel_hierarquia.y, quantidade_internacoes)) %>%
       ungroup()
   ) %>%
   ggplot() +
-  scale_fill_discrete_qualitative(palette = "Dark 3")+ 
-  geom_col(aes(x=quantidade_internacoes, y=fct_reorder(nome_nivel_hierarquia, quantidade_internacoes,sum), fill=tipo_deslocamento), position="fill")+
+  scale_fill_discrete_qualitative(palette = "Dynamic")+ 
+  geom_col(aes(x=quantidade_internacoes, y=fct_reorder(nome_nivel_hierarquia, quantidade_internacoes,sum), fill=str_wrap(tipo_deslocamento,10)), position="fill")+
   theme_light() +
   theme(
     panel.background = element_rect(fill = "#15202B"),
@@ -565,17 +612,21 @@ g2<-dataset_analise %>%
     axis.title.x = element_blank(),
     axis.title.y = element_blank(),
     legend.title = element_blank()
-  ) 
+  )+
+  labs(
+    title= "Hospitais: Origem dos pacientes"
+  )  
 
-g1|g2
+
+g1/g2/g3
 
 ```
 
-No gráfico à esquerda vê-se que os centros locais lideram o ranking de quantidade de atendimentos. A soma das populações dos mais de 4000 municípios desse nível hierárquico ajuda a justificar essa posição. Na verdade a combinação de efeito da quantidade de municípios e de população dos municípios explica grande parte do ranking. A ordem do gráfico da esquerda foi utilizada para o gráfico da direita. É aí onde se encontram os principais achados.
+No primeiro gráfico vê-se que os centros locais lideram o ranking de quantidade de atendimentos. A soma das populações dos mais de 4000 municípios desse nível hierárquico ajuda a justificar essa posição. Na verdade a combinação de efeito da quantidade de municípios e de população dos municípios explica grande parte do ranking. Na verdade os principais achados encontram-se nos outros dois gráficos.
 
-Vê-se que os centros locais se destacam por ter a maior proporção de atendimentos dos seus residentes em outras cidades. Isso combina com o que se esperava da classificação REGIC onde esses municípios se caracterizam pela pouca autonomia de gestão. Por outro lado, todos os sub-níveis hierárquicos de metrópoles destacam-se pela grande autonomia no atendimento de seus pacientes.
+Pelo segundo gráfico Vê-se que os centros locais se destacam por ter a maior proporção de atendimentos dos seus residentes em outras cidades. Isso combina com o que se esperava da classificação REGIC onde esses municípios se caracterizam pela pouca autonomia de gestão. Por outro lado, todos os sub-níveis hierárquicos de metrópoles destacam-se pela grande autonomia no atendimento de seus pacientes.
 
-Em relação a recepção de pacientes de outras cidades, vê-se um forte papel desempenhado por Metrópole, mas, ainda mais importante, destaca-se o papel dos níveis intermediários da hierarquia REGIC, representados principalmente por capitais regionais e centros sub-regionais. Aqui pode-se inferir que os pacientes procuram primeiro o atendimento nos municípios de nível de influência um pouco mais elevadao e possivelmente mais próximos ao seu endereço. Em outras palavras, não há necessariamente um fluxo direto para as metrópoles. Um pouco mais adiante vamos mostrar isso de uma forma mais evidente com os fluxos entre as classes hierárquicas.
+Em relação a recepção de pacientes de outras cidades, vê-se no terceiro gráfico um forte papel desempenhado por Metrópole, mas, ainda mais importante, destaca-se o papel dos níveis intermediários da hierarquia REGIC, representados principalmente por capitais regionais e centros sub-regionais. Aqui pode-se inferir que os pacientes procuram primeiro o atendimento nos municípios de nível de influência um pouco mais elevadao e possivelmente mais próximos ao seu endereço. Em outras palavras, não há necessariamente um fluxo direto para as metrópoles. Um pouco mais adiante vamos mostrar isso de uma forma mais evidente com os fluxos entre as classes hierárquicas.
 
 Vamos nesse momento para uma outra análise: como fica no mapa do Brasil a informação de entradas e saídas de pacientes? Com os dados de atendimentos calculamos para cada cidade qual o percentual de pacientes que são atendidos em outro municípios. Da mesma forma, calculamos para cada cidade quanto do total de pacientes atendidos em sua rede hospitalar são oriundos de outros centros urbanos. Vamos começar mostrando um gráfico que trabalha com o percentual de saída de pacientes para outras localidades.
 
