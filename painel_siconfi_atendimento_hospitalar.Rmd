@@ -1,11 +1,30 @@
 ---
-title: "Painel de gastos hospitalares"
+title: "Deslocamentos e gastos hospitalares"
 output: 
   flexdashboard::flex_dashboard:
     orientation: columns
     vertical_layout: fill
 runtime: shiny
 ---
+
+```{css}
+<meta name="author" content="Tesoro Nacional">
+<meta name="description" content="A diversidade de possibilidades de atendimentos hospitalares nos municípios brasileiros levam a fluxos de pacientes entre municípios brasileiros? A alocação de recursos municipais em hospitais traz influências nesse eventual fluxo? O painel e o texto que a equipe de dados da STN desenvolveu indica que sim para ambas perguntas">
+<meta property="og:image" content="https://github.com/fernandobarbalho/enap_auto_instucional/blob/main/wilker-lauriano-9dkdy9m0YXE-unsplash.jpg">
+<meta property="og:description" content="Entenda os fluxos de pacientes hospitalares entre municípios brasileiros e suas relações com as despesas públicas">
+<meta property="og:title" content="Internações hospitalares e deslocamentos">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="
+Internações hospitalares e deslocamentos
+">
+<meta name="twitter:description" content="Entenda os fluxos de pacientes hospitalares entre municípios brasileiros e suas relações com as despesas públicas.">
+<meta name="twitter:site" content="@TesouroNacional">
+<meta name="twitter:creator" content="@barbalhofernand">
+<meta name="twitter:image" content="https://github.com/fernandobarbalho/enap_auto_instucional/blob/main/wilker-lauriano-9dkdy9m0YXE-unsplash.jpg">
+
+```
+
+
 
 ```{r setup, include=FALSE}
 library(flexdashboard)
@@ -270,6 +289,27 @@ busca_todos_municipios<- function(){
 
 ```
 
+Uma análise
+=====================================  
+### Um storytelling antes dos painíes
+
+
+```{r}
+
+renderUI({
+  
+   tags$iframe(src = "https://fernandobarbalho.github.io/siconfi_hospitais/", height="100%", width="100%")
+  
+
+})
+
+
+
+```
+
+
+
+
 REGIC
 =====================================  
 
@@ -387,7 +427,7 @@ renderPlot({
 
 
 
-Panorama de saída e entrada de pacientes
+Fluxo de pacientes - Brasil 
 =====================================  
 
 Inputs {.sidebar data-width=150} 
@@ -467,7 +507,7 @@ renderPlot({
 ```
 
 
-Fluxos de saída e entrada de pacientes
+Fluxos por REGIC
 =====================================  
 
 Inputs {.sidebar data-width=150} 
@@ -590,7 +630,7 @@ parcats::parcats(p,
 
 ```
 
-Entradas e saídas de pacientes por cidade
+Fluxo por cidade
 =====================================  
 
 Inputs {.sidebar data-width=150} 

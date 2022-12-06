@@ -3,13 +3,28 @@ title: "Internações hospitalares e deslocamentos"
 format: 
   html:
     code-fold: true
-    self-contained: true
+    self-contained: false
 editor: visual
 execute:
   warning: false
   message: false
   cache: true
 ---
+
+<meta name="author" content="Tesoro Nacional">
+<meta name="description" content="A diversidade de possibilidades de atendimentos hospitalares nos municípios brasileiros levam a fluxos de pacientes entre municípios brasileiros? A alocação de recursos municipais em hospitais traz influências nesse eventual fluxo? O painel e o texto que a equipe de dados da STN desenvolveu indica que sim para ambas perguntas">
+<meta property="og:image" content="https://github.com/fernandobarbalho/siconfi_hospitais/blob/main/wilker-lauriano-9dkdy9m0YXE-unsplash.jpg">
+<meta property="og:description" content="Entenda os fluxos de pacientes hospitalares entre municípios brasileiros e suas relações com as despesas públicas">
+<meta property="og:title" content="Internações hospitalares e deslocamentos">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="
+Internações hospitalares e deslocamentos
+">
+<meta name="twitter:description" content="Entenda os fluxos de pacientes hospitalares entre municípios brasileiros e suas relações com as despesas públicas.">
+<meta name="twitter:site" content="@TesouroNacional">
+<meta name="twitter:creator" content="@barbalhofernand">
+<meta name="twitter:image" content="https://github.com/fernandobarbalho/siconfi_hospitais/blob/main/wilker-lauriano-9dkdy9m0YXE-unsplash.jpg">
+
 
 <style>
 div.comment {
@@ -22,6 +37,8 @@ font-style: italic;
 }
 
 </style>
+
+
 
 ```{r}
 knitr::include_graphics("wilker-lauriano-9dkdy9m0YXE-unsplash.jpg")
@@ -135,7 +152,8 @@ sub_funcao_saude_Uniao_2019 %>%
   )+
   labs(
     x= "Gasto em R$ (bi)",
-    y=""
+    y="",
+    caption = "Gastos por sub-função de sáude para os níveis federativos"
   )
 ```
 
@@ -184,6 +202,10 @@ ggplot() +
     panel.background = element_rect(fill = "#15202B")
     
     
+  ) +
+  labs(
+    title = "Gastos dos municípios nas sub-funções de saúde",
+    subtitle= "Todos os municípios"
   )
 
 ```
@@ -224,7 +246,9 @@ ggplot() +
     panel.background = element_rect(fill = "#15202B")
   ) +
   labs(
-    x= "Gastos em R$ (mi)"
+    x= "Gastos em R$ (mi)",
+    title ="Gastos dos municípios nas sub-funções de saúde",
+    subtitle= "Municípios com maiores gastos com saúde"
   )
 
 ```
@@ -267,7 +291,9 @@ ggplot() +
     
   )+
   labs(
-    x= "Gastos em R$ (mil)"
+    x= "Gastos em R$ (mil)",
+    title ="Gastos dos municípios nas sub-funções de saúde",
+    subtitle= "Municípios com menores gastos com saúde"
   )
 
 ```
@@ -278,7 +304,7 @@ O primeiro gráfico mostra as proporções dos gastos nas sub-funções de saúd
 
 Observe na primeira figura que a cor amarela relativa à **assistência hospitalar** predomina no início, mas depois passa a prevalecer o verde que é a cor de **atenção básica**. Aqui vale destacar que o gráfico está em ordem decrescente do gasto total na soma das sub-funções de saúde. No segundo gráfico percebe-se esse fenômeno com mais clareza: os grandes municípios gastam mais com assistência hospitalar do que com atenção básica. No terceiro gráfico percebe-se o contrário: uma maior quantidade de municípios com gastos maiores em Atenção Básica. Inclusive, nesse caso, pode-se até observar que alguns municípios não apresentam gastos de assistência hospitalar e ambulatorial.
 
-É esse desequilíbrio entre os gastos entre os municípios brasileiros que nos fez questionar se o impacto dos gastos municipais em hospitais poderia gerar fluxos de pacientes para além das fronteiras municipais. Os próximos tópicos vamos verficar as dinâmicas dos deslocamentos de pacientes e ao final fazer a relação entre as entradas e saídas de paciente com a execução orçamentária dos municípios.
+É esse desequilíbrio entre os gastos entre os municípios brasileiros que nos fez questionar se o impacto dos gastos municipais em hospitais poderia gerar fluxos importantes de pacientes para além das fronteiras municipais. Nos próximos tópicos vamos verficar as dinâmicas dos deslocamentos de pacientes e ao final fazer a relação entre as entradas e saídas de paciente com a execução orçamentária dos municípios.
 
 ## Deslocamentos hospitalares e Regiões de Influência
 
@@ -387,10 +413,6 @@ dataset_analise %>%
 
 g1|g2|g3
 
-# cowplot::ggdraw()+
-#   cowplot::draw_plot(g1,0, 0, .3, 1)+
-#   cowplot::draw_plot(g2,.3, 0, .3, 1)+
-#   cowplot::draw_plot(g3,.6, 0, .3, 1)
 
 
 ```
@@ -586,7 +608,7 @@ g3<-dataset_analise %>%
   summarise(
     quantidade_internacoes =n()
   )%>%
-  mutate(tipo_deslocamento = ifelse(deslocamento=="0","locais","De outros muncípios")) %>%
+  mutate(tipo_deslocamento = ifelse(deslocamento=="0","Locais","Outros muncípios")) %>%
   mutate(nome_nivel_hierarquia = reorder(nome_nivel_hierarquia.x, quantidade_internacoes)) %>%
   ungroup() %>%
   bind_rows(
@@ -598,7 +620,7 @@ g3<-dataset_analise %>%
       summarise(
         quantidade_internacoes =n()
       )%>%
-      mutate(tipo_deslocamento = "De outros muncípios") %>%
+      mutate(tipo_deslocamento = "Outros muncípios") %>%
       mutate(nome_nivel_hierarquia= reorder(nome_nivel_hierarquia.y, quantidade_internacoes)) %>%
       ungroup()
   ) %>%
@@ -622,11 +644,11 @@ g1/g2/g3
 
 ```
 
-No primeiro gráfico vê-se que os centros locais lideram o ranking de quantidade de atendimentos. A soma das populações dos mais de 4000 municípios desse nível hierárquico ajuda a justificar essa posição. Na verdade a combinação de efeito da quantidade de municípios e de população dos municípios explica grande parte do ranking. Na verdade os principais achados encontram-se nos outros dois gráficos.
+No primeiro gráfico vê-se que os centros locais lideram o ranking de quantidade de atendimentos. A soma das populações dos mais de 4000 municípios desse nível hierárquico ajuda a justificar essa posição. Na verdade a combinação de efeito da quantidade de municípios e de população dos municípios explica grande parte do ranking.Na verdade os principais achados encontram-se nos outros dois gráficos.
 
-Pelo segundo gráfico Vê-se que os centros locais se destacam por ter a maior proporção de atendimentos dos seus residentes em outras cidades. Isso combina com o que se esperava da classificação REGIC onde esses municípios se caracterizam pela pouca autonomia de gestão. Por outro lado, todos os sub-níveis hierárquicos de metrópoles destacam-se pela grande autonomia no atendimento de seus pacientes.
+Pelo segundo gráfico vê-se que os centros locais se destacam por ter a maior proporção de atendimentos dos seus residentes em outras cidades. Isso combina com o que se esperava da classificação REGIC onde esses municípios se caracterizam pela pouca autonomia de gestão. Destaca-se ainda a grande necessidade de deslocamento dos pacientes residentes nos centros de zona. No sentido contrário, todos os sub-níveis hierárquicos de metrópoles destacam-se pela grande autonomia no atendimento de seus pacientes.
 
-Em relação a recepção de pacientes de outras cidades, vê-se no terceiro gráfico um forte papel desempenhado por Metrópole, mas, ainda mais importante, destaca-se o papel dos níveis intermediários da hierarquia REGIC, representados principalmente por capitais regionais e centros sub-regionais. Aqui pode-se inferir que os pacientes procuram primeiro o atendimento nos municípios de nível de influência um pouco mais elevadao e possivelmente mais próximos ao seu endereço. Em outras palavras, não há necessariamente um fluxo direto para as metrópoles. Um pouco mais adiante vamos mostrar isso de uma forma mais evidente com os fluxos entre as classes hierárquicas.
+O terceiro gráfico está ordenado pelo número total de atendimentos realizados em cada nível REGIC. Em relação à recepção de pacientes de outras cidades, vê-se um forte papel desempenhado por Metrópole, mas, ainda mais importante, destaca-se o papel dos níveis intermediários da hierarquia REGIC, representados principalmente por capitais regionais e centros sub-regionais. Aqui pode-se inferir que os pacientes procuram primeiro o atendimento nos municípios de nível de influência um pouco mais elevadao e possivelmente mais próximos ao seu endereço. Em outras palavras, não há necessariamente um fluxo direto para as metrópoles. Um pouco mais adiante vamos mostrar isso de uma forma mais evidente com os fluxos entre as classes hierárquicas.
 
 Vamos nesse momento para uma outra análise: como fica no mapa do Brasil a informação de entradas e saídas de pacientes? Com os dados de atendimentos calculamos para cada cidade qual o percentual de pacientes que são atendidos em outro municípios. Da mesma forma, calculamos para cada cidade quanto do total de pacientes atendidos em sua rede hospitalar são oriundos de outros centros urbanos. Vamos começar mostrando um gráfico que trabalha com o percentual de saída de pacientes para outras localidades.
 
@@ -701,7 +723,7 @@ municipios_seat %>%
   geom_text_repel(data = mun_sel_nivel_2A,aes(x=X, y=Y, label= name_muni),fontface = "bold", color="white", force =2)+
   scale_fill_continuous_sequential(palette= "Heat 2")+
   labs(
-    fill= str_wrap("% de saída de pacientes",15) 
+    fill= str_wrap("% de pacientes internados em outros municípios",15) 
   )+
   theme_light() +
   theme(
@@ -745,7 +767,7 @@ municipios_seat %>%
   geom_text_repel(data = mun_sel_nivel_2A,aes(x=X, y=Y, label= name_muni),fontface = "bold", color="white", force =2)+
   scale_fill_continuous_sequential(palette= "Heat 2")+
   labs(
-    fill= str_wrap("% de internações de entrada",15) 
+    fill= str_wrap("% de pacientes internados de outros municípios",15) 
   )+
   theme_light() +
   theme(
@@ -1028,7 +1050,7 @@ g1|g2
 
 Paraupebas é classificado como Centro sub-regional A. Com o percentual de saída de paciente em torno de 13% consegue atender a maior parte da demanda local. Ainda assim, 112 pacientes da amostra precisaram ser atendidos em outras cidades. Pelo mapa à esquerda observa-se que as distâncias para esse atendimento alcançaram 1250 km, com pacientes sendo atendidos em quatro regiões do Brasil: Norte, Nordeste, Sudeste e Centro-Oeste. Nota-se que a maior parte dos atendimentos, conforme a cor vermelha no mapa à direita, ocorre em Belém e Marabá, ambas cidades localizadas no Pará. Mesmo para esses municípios as distâncias não são pequenas. Marabá, uma capital regional C, fica a aproximadamente 100km, enquanto Belém, a metrópole do estado, está a 370km. Importante notar que essas distâncias foram calculadas usando a [fórmula de haversine](https://pt.wikipedia.org/wiki/F%C3%B3rmula_de_haversine) e não levam em conta as condições de meio de transporte disponíveis.
 
-Vamos ver agora como fica um exemplo de chegada de pacientes. A influência de um município pode ser claramente identificada por esses estudos espaciais que envolvem os mapas de distância e quantidade de pacientes atendidos vindos de outros municípios. Vamos ver o caso de Recife, que como já vimos, é a cidade que mais atrai pacientes de outros centros urbanos.
+Vamos ver agora como fica um exemplo de chegada de pacientes. A influência de um município pode ser claramente identificada por esses estudos espaciais que envolvem os mapas de distância e quantidade de pacientes atendidos vindos de outros municípios. Focaremos o caso de Recife, a cidade que mais atrai pacientes de outros centros urbanos.
 
 ```{r fig.width=20, fig.height=10, fig.dpi=500}
 
@@ -1394,7 +1416,7 @@ O proximo passo foi identificar como os percentuais de gastos em hospitais se as
 [^4]: Tal como os dados sobre gastos informados logo na primeira seção do texto, aqui também utilizamos as informações vindas do SICONFI. A diferença é que para esse caso usamos uma [biblioteca em R](https://github.com/tchiluanda/siconfiBD) desenvolvida pela STN que facilita o consumo automatizado dos dados anuais de municípios.
 
 ```{r fig.width=20, fig.height=10, fig.dpi=500}
-agrupamento_municipio_cluster<-readRDS("agrupamento_municipio.RDS")
+agrupamento_municipio_cluster<-readRDS("agrupamento_municipio_2020.RDS")
 
 g1<-
 dataset_analise %>%
@@ -1466,9 +1488,9 @@ g1|g2
 
 Cada ponto colorido dos gráficos é um município brasileiro. As cores dos pontos representam o percentual de sáida de pacientes, para o gráfico esquerdo, e o percentual de atendimentos de pacientes de outras cidades, para o gráfico direito. No eixo horizontal dos dois gráficos vemos os grupos e no eixo vertical o percentual de gastos com atendimento hospitalar e ambulatorial. Os quadrados que aparecem nos gráficos são conhecidos como box-plot. A principal função do box-plot é identificar o intervalo onde ficam 75% dos valores intermediários da dimensão que queremos analisar. Esse intervalo é dado pela área entre a primeira e a terceira retas horizontais do quadrado. A reta horizontal do meio representa a mediana. Em outras palavras, para o caso em análise, 50% dos municípios apresentam proporções de gastos com atendimento hospitalar e ambulatorial menores do que o valor assinalado pela reta da mediana em cada um dos box-plots representados.
 
-Feita a apresentação dos gráficos fica fácil perceber que a conclusão mais importante da associação entre gastos e grupos de entrada e saída de pacientes. Quando se analisa as saídas de pacientes, no gráfico à esquerda, descobrimos que o grupo **saída forte** apresenta mediana de gastos proporcionais com hospitais muito inferior aos demais grupos. Além disso, o grupo **entrada forte** apresenta a mediana destacadamente superior aos demais grupos.
+Feita a apresentação dos gráficos fica fácil perceber que a conclusão mais importante da associação entre gastos e grupos de entrada e saída de pacientes. Quando se analisa as saídas de pacientes, no gráfico à esquerda, descobrimos que o grupo **saída forte** apresenta mediana de gastos proporcionais com hospitais muito inferior aos demais grupos. Além disso, o grupo **entrada moderada** apresenta a mediana destacadamente superior aos demais grupos.
 
-O gráfico do lado direito traz sinais contraditórios. Os grupos **entrada forte** e **saída forte** apresentam medianas parecidas e maiores do que as dos outros dois grupos. Nesse caso não é possível chegar-se a conclusões sobre o impacto da despesa com hospitais e atração de pacientes.
+O gráfico do lado direito traz sinais contraditórios. Os grupos **entrada moderada** e **saída forte** apresentam medianas parecidas e maiores do que as dos outros dois grupos. Nesse caso não é possível chegar-se a conclusões sobre o impacto da despesa com hospitais e atração de pacientes.
 
 Observando o quadro geral dos dois gráficos e contrastando com nossa inquietação de pesquisa inicial, podemos concluir que há uma forte associação inversa entre proporções de gastos com hospitais e necessidade de deslocamento de pacientes para outros municípios.
 
@@ -1504,12 +1526,9 @@ dataset_analise %>%
              percentual = perc.y)
   )%>%
   ggplot() +
-  #geom_jitter(aes(x=nome_nivel_hierarquia_ordenado.x, y=perc.x, fill=perc_saida), pch=21, color="#444444",size=2)+
   geom_jitter(aes(x=hierarquia, y=percentual, fill=cluster_4_k), pch=21, color="#444444",size=2)+
   geom_boxplot(aes(x=hierarquia, y=percentual),fill=NA, color= "white", outlier.shape = NA)+
-  #scale_fill_discrete_qualitative(palette = "Dark 3", rev=TRUE)+ 
   scale_fill_discrete_divergingx(palette= "Zissou 1")+
-  #scale_fill_discrete_sequential(palette= "Reds 3")+
   theme_light() +
   theme(
     text = element_text(size=18),
