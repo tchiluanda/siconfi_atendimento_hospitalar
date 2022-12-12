@@ -4,6 +4,8 @@ output:
   flexdashboard::flex_dashboard:
     orientation: columns
     vertical_layout: fill
+    social: menu
+    source_code: https://github.com/tchiluanda/siconfi_atendimento_hospitalar
 runtime: shiny
 ---
 
@@ -291,7 +293,7 @@ busca_todos_municipios<- function(){
 
 Uma análise
 =====================================  
-### Um storytelling antes dos painíes
+### Um storytelling antes dos painéis
 
 
 ```{r}
@@ -317,7 +319,7 @@ Inputs {.sidebar data-width=150}
 -------------------------------------
 
 ```{r}
-selectInput(inputId = "regic_mun", label= "Selecione um ou mais municipios", choices= busca_municipio_regic(),selected = busca_municipio_regic()[1], multiple = TRUE )
+selectInput(inputId = "regic_mun", label= "Selecione um ou mais municipios", choices= busca_municipio_regic(),selected = busca_municipio_regic()[1], multiple = TRUE, selectize = TRUE )
 
 # Create placeholder for the downloadButton
 uiOutput("downloadUI_mapa_regic")
@@ -434,7 +436,7 @@ Inputs {.sidebar data-width=150}
 -------------------------------------
 
 ```{r}
-selectInput(inputId = "regic_mun_io", label= "Selecione um ou mais municipios", choices= busca_municipio_regic(),selected = busca_municipio_regic()[1], multiple = TRUE )
+selectInput(inputId = "regic_mun_io", label= "Selecione um ou mais municipios", choices= busca_municipio_regic(),selected = busca_municipio_regic()[1], multiple = TRUE,selectize = TRUE )
 
 # Create placeholder for the downloadButton
 uiOutput("downloadUI_mapa_es_paciente")
@@ -514,10 +516,10 @@ Inputs {.sidebar data-width=150}
 -------------------------------------
 
 ```{r}
-selectInput(inputId = "regic_hierarquia_s", label= "Selecione uma ou mais hierariquias pra saída", choices= busca_hierarquia_regic(),selected = "Centro Local", multiple = TRUE )
+selectInput(inputId = "regic_hierarquia_s", label= "Selecione uma ou mais hierariquias pra saída", choices= busca_hierarquia_regic(),selected = "Centro Local", multiple = TRUE, selectize = TRUE )
 
 
-selectInput(inputId = "regic_hierarquia_e", label= "Selecione uma ou mais hierariquias pra saída", choices= busca_hierarquia_regic(),selected = busca_hierarquia_regic(), multiple = TRUE )
+selectInput(inputId = "regic_hierarquia_e", label= "Selecione uma ou mais hierariquias pra saída", choices= busca_hierarquia_regic(),selected = busca_hierarquia_regic(), multiple = TRUE, selectize = TRUE )
 
 checkboxInput(inputId = "histograma",label = "Exibe histograma", value = TRUE)
 
@@ -637,7 +639,7 @@ Inputs {.sidebar data-width=150}
 -------------------------------------
 
 ```{r}
-selectInput(inputId = "regic_mun_desloc", label= "Selecione um municipio", choices= busca_todos_municipios(),selected = "Recife", multiple = FALSE )
+selectInput(inputId = "regic_mun_desloc", label= "Selecione um municipio", choices= busca_todos_municipios(),selected = "Recife", multiple = FALSE, selectize = TRUE )
 
 sliderInput(inputId= "num_destaque", label = "Número de cidades em destaques", min=1, max = 5, value=1 )
 
@@ -1046,7 +1048,9 @@ Inputs {.sidebar data-width=150}
 -------------------------------------
 
 ```{r}
-selectInput(inputId = "regic_mun_gasto", label= "Selecione um ou mais municipios", choices= busca_todos_municipios(),selected = "Recife", multiple = TRUE )
+
+
+selectInput(inputId = "mun_gasto", label= "Selecione um ou mais municipios", choices= busca_todos_municipios(),selected = "Recife", multiple = TRUE, selectize = TRUE )
 
 
 ```
@@ -1066,9 +1070,9 @@ renderPlot({
   
 
 codigo_muni<-
-    unique(dataset_analise$munic_res[str_to_lower(dataset_analise$mun_res_nome.x) %in% str_to_lower(input$regic_mun_gasto)])
+    unique(dataset_analise$munic_res[str_to_lower(dataset_analise$mun_res_nome.x) %in% str_to_lower(input$mun_gasto)])
 
-print(input$regic_mun_gasto)
+print(input$mun_gasto)
 print(codigo_muni)
 
 muni_sel_saida<-
@@ -1179,7 +1183,7 @@ Inputs {.sidebar data-width=150}
 -------------------------------------
 
 ```{r}
-selectInput(inputId = "regic_mun_gasto", label= "Selecione um ou mais municipios", choices= busca_municipio_regic(),selected = "Recife", multiple = TRUE )
+selectInput(inputId = "regic_mun_gasto", label= "Selecione um ou mais municipios", choices= busca_municipio_regic(),selected = "Recife", multiple = TRUE, selectize = TRUE )
 
 
 ```
