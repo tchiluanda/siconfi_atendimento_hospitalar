@@ -12,20 +12,31 @@ execute:
 ---
 
 <meta name="author" content="Tesoro Nacional">
+
 <meta name="description" content="A diversidade de possibilidades de atendimentos hospitalares nos municípios brasileiros levam a fluxos de pacientes entre municípios brasileiros? A alocação de recursos municipais em hospitais traz influências nesse eventual fluxo? O painel e o texto que a equipe de dados da STN desenvolveu indica que sim para ambas perguntas">
+
 <meta property="og:image" content="https://github.com/fernandobarbalho/siconfi_hospitais/blob/main/wilker-lauriano-9dkdy9m0YXE-unsplash.jpg">
+
 <meta property="og:description" content="Entenda os fluxos de pacientes hospitalares entre municípios brasileiros e suas relações com as despesas públicas">
+
 <meta property="og:title" content="Internações hospitalares e deslocamentos">
+
 <meta name="twitter:card" content="summary">
+
+```{=html}
 <meta name="twitter:title" content="
 Internações hospitalares e deslocamentos
 ">
+```
 <meta name="twitter:description" content="Entenda os fluxos de pacientes hospitalares entre municípios brasileiros e suas relações com as despesas públicas.">
+
 <meta name="twitter:site" content="@TesouroNacional">
+
 <meta name="twitter:creator" content="@barbalhofernand">
+
 <meta name="twitter:image" content="https://github.com/fernandobarbalho/siconfi_hospitais/blob/main/wilker-lauriano-9dkdy9m0YXE-unsplash.jpg">
 
-
+```{=html}
 <style>
 div.comment {
 background-color: #DBDBDB;
@@ -37,18 +48,12 @@ font-style: italic;
 }
 
 </style>
-
-
-
+```
 ```{r}
 knitr::include_graphics("wilker-lauriano-9dkdy9m0YXE-unsplash.jpg")
 ```
 
-
 Foto por <a href="https://unsplash.com/@willph?utm_source=unsplash&utm_medium=referral&utm_content=creditCopyText">Wilker Lauriano</a> on <a href="https://unsplash.com/s/photos/hospital-brazil?utm_source=unsplash&utm_medium=referral&utm_content=creditCopyText">Unsplash</a>
-
-
-
 
 ```{r setup}
 library(tidyverse)
@@ -490,12 +495,12 @@ municipios_seat %>%
 
 ```
 
-Como se vê na figura acima, o REGIC divide as cidades do Brasil em onze níveis e sub-níveis hierárquicos. Da esquerda para a direita, de cima para baixo, é possível perceber a gradação hierárquica. 
+Como se vê na figura acima, o REGIC divide as cidades do Brasil em onze níveis e sub-níveis hierárquicos. Da esquerda para a direita, de cima para baixo, é possível perceber a gradação hierárquica.
 
 **Algumas palavras a mais sobre o REGIC**
-<div class="comment">
-No primeiro nível da hierarquia estão as **Metrópoles**. Conforme o [IBGE](https://biblioteca.ibge.gov.br/visualizacao/livros/liv101728_folder.pdf), tratam-se "\[d\]os 15 principais centros urbanos, dos quais todas as Cidades existentes no País recebem influência direta, seja de uma ou mais Metrópoles simultaneamente. A região de influência dessas centralidades é ampla e cobre toda a extensão territorial do País, com áreas de sobreposição em determinados contatos".
 
+::: comment
+No primeiro nível da hierarquia estão as **Metrópoles**. Conforme o [IBGE](https://biblioteca.ibge.gov.br/visualizacao/livros/liv101728_folder.pdf), tratam-se "\[d\]os 15 principais centros urbanos, dos quais todas as Cidades existentes no País recebem influência direta, seja de uma ou mais Metrópoles simultaneamente. A região de influência dessas centralidades é ampla e cobre toda a extensão territorial do País, com áreas de sobreposição em determinados contatos".
 
 Quando se trata de metrópoles temos no maior nível hierárquico o municípios de São Paulo como a única **grande metrópole nacional**. Brasília e Rio de Janeiro, vêm em seguida como as **metrópoles nacionais.** Por fim, existem doze **metrópoles**, representadas por 11 capitais mais influentes e Campinas. Observa-se nos mapas acima que todos as cidades sedes das metrópoles possuem mais de 500 mil habitantes, destacadas na cor amarela, com exceção de Vitória.
 
@@ -514,7 +519,7 @@ No quarto nível hierárquico estão os **Centros de Zona**. Reune municípios q
 O último nível hierárquico corresponde aos **Centros Locais**. Aqui a influência restringe-se aos próprios limites territoriais. Os municípios não costumam ser destino principal de nenhuma outra cidade. Além disso, caracterizam-se pela fraca centralidade de gestão e com grande dependência de centros de maior hierarquia. Os centros locais representam a grande maioria dos municípios brasileiros: 4037 centros urbanos. A média populacional é de 12,5 mil habitantes.
 
 É importante observar o conceito de arranjo populacional que é utilizado pelo IBGE para determinar as cidades e suas áreas de influência. Todas as metrópoles e ainda algumas capitais regionais são mapeadas como arranjos populacionais que envolvem mais de um município. Dessa forma quando se fala em uma cidade que é núcleo desses arranjos, a referência para o REGIC se expande para todos os municípios que englobam o arranjo. Por exemplo, para o REGIC, Recife engloba não só os limites da capital como também os da sua região metropolitana. Da mesma forma quando se fala em Juazeiro do Norte-CE, engloba-se também Crato e Barbalha, que estão no mesmo arranjo populacional. Para a nossa análise, apesar de usarmos o REGIC como referência, utilizamos os dados de fluxo de paciente apenas da cidade núcleo dos arranjos populacionais. Entendemos que essa opção não traz prejuízos analíticos para os objetivos deste trabalho
-</div>
+:::
 
 ## As regiões de influência: entradas e saídas
 
@@ -1559,15 +1564,17 @@ Vimos que o Regic é um bom preditor dos deslocamentos de pacientes entre munic�
 
 Já no final do texto percebemos que os gastos hospitalares estão associados inversamente a um grande percentual de atendimentos fora dos municípios de residência e isso se reflete na hierarquia Regic onde percebemos que os centros locais no geral gastam bem menos que os outros municípios.
 
-É preciso dizer, porém, que há motivações para que esse tipo de desenho ocorra. Talvez não necessariamente de forma tão acentuada. A organização do SUS prevê **regiões de saúde** formadas por agrupamentos de municípios. Esse tipo de arranjo tem entre outros objetivos a busca da racionalização dos gastos, otimização de recursos e eficiência na rede de atenção[^5]. Essa caracterização do SUS prevê fluxos de pacientes e pode influenciar a decisão alocativa de orçamento municipal. O nosso trabalho não tem a intenção de mostrar as redes de causalidade que geram o quadro aqui apresentado. Acreditamos que essa é uma tarefa para equipes mais especializadas sobre o tema de saúde pública. Em todo caso deixamos aqui nossas análises, com códigos e dados abertos [^6], de forma que possam ser úteis para futuros trabalhos onde outros aspectos do atendimento hospitalar sejam investigados
+É preciso dizer, porém, que há motivações para que esse tipo de desenho ocorra. Talvez não necessariamente de forma tão acentuada. A organização do SUS prevê **regiões de saúde** formadas por agrupamentos de municípios. Esse tipo de arranjo tem entre outros objetivos a busca da racionalização dos gastos, otimização de recursos e eficiência na rede de atenção[^5]. Essa caracterização do SUS prevê fluxos de pacientes e pode influenciar a decisão alocativa de orçamento municipal. O nosso trabalho não tem a intenção de mostrar as redes de causalidade que geram o quadro aqui apresentado. Acreditamos que essa é uma tarefa para equipes mais especializadas sobre o tema de saúde pública[^6]. Em todo caso deixamos aqui nossas análises, com códigos e dados abertos [^7], de forma que possam ser úteis para futuros trabalhos onde outros aspectos do atendimento hospitalar sejam investigados
 
 [^5]: Para conhecer mais sobre as diretrizes gerais sobre regiões de saúde, leia a [resolução Nº 1, de 29 de setembro de 2011](https://bvsms.saude.gov.br/bvs/saudelegis/cit/2011/res0001_29_09_2011.html) do Ministério da Sáude.
 
-[^6]: Os códigos utilizados, incluindo os processos de captura dos dados das fontes primárias estão disponíveis no [github](https://github.com/tchiluanda/siconfi_atendimento_hospitalar).
+[^6]: Para conhecer mais sobre o fenômeno da evasão de pacientes para fora de suas regiões de saúde recomendamos a leitura de Rocha, R., Rache, R. e L. Nunes (2022). A Regionalização da Saúde no Brasil. Estudo Institucional n.7. São Paulo: Instituto de Estudos para Políticas de Saúde
+
+[^7]: Os códigos utilizados, incluindo os processos de captura dos dados das fontes primárias estão disponíveis no [github](https://github.com/tchiluanda/siconfi_atendimento_hospitalar).
 
 ### Um pouco sobre o painel
 
-Provavelmente você está lendo esse texto a partir de um painel produzido pela Secretaria do Tesouro Nacional. Além desse material o painel conta com páginas que de uma certa forma permitem localizar os municípios dentro dos quadros analíticos explorados ao longo do texto. Convidamos o leitor para fazer a navegação por entre as abas disponibilizadas, fazer filtros, baixar dados e capturar gráficos para outras ressignficações dos dados sobre atendimentos hospitares no Brasil e suas relações com execuções orçamentárias municipais.
+Provavelmente você está lendo esse texto a partir de um painel produzido pela Secretaria do Tesouro Nacional. Além desse material o painel conta com páginas que de uma certa forma permitem localizar os municípios dentro dos quadros analíticos explorados ao longo do texto. É possível ainda que com a evolução das sugestões de usuários novas páginas sejam acrescentadas sem necessariamente haver análises feitas pela equipe da STN. Convidamos o leitor a navegar por entre as abas disponibilizadas, fazer filtros, baixar dados e capturar gráficos para outras ressignficações dos dados sobre atendimentos hospitares no Brasil e suas relações com execuções orçamentárias municipais.
 
 ### Agradecimentos
 
