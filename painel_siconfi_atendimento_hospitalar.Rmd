@@ -8,6 +8,17 @@ output:
     source_code: https://github.com/tchiluanda/siconfi_atendimento_hospitalar
 runtime: shiny
 ---
+<!-- Google tag (gtag.js) -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-PK2407NCVV"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+
+  gtag('config', 'G-PK2407NCVV');
+</script>
+
+
 
 ```{css}
 <meta name="author" content="Tesoro Nacional">
@@ -25,7 +36,6 @@ Internações hospitalares e deslocamentos
 <meta name="twitter:image" content="https://github.com/fernandobarbalho/enap_auto_instucional/blob/main/wilker-lauriano-9dkdy9m0YXE-unsplash.jpg">
 
 ```
-
 
 
 ```{r setup, include=FALSE}
@@ -290,6 +300,8 @@ busca_todos_municipios<- function(){
 
 
 ```
+
+
 
 Uma análise
 =====================================  
