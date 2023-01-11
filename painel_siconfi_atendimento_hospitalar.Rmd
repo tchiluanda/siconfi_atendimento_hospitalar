@@ -1,5 +1,5 @@
 ---
-title: "Deslocamentos e gastos hospitalares"
+title: "Deslocamentos e gastos hospitalares dos municípios brasileiros"
 output: 
   flexdashboard::flex_dashboard:
     orientation: columns
@@ -305,7 +305,7 @@ busca_todos_municipios<- function(){
 
 Uma análise
 =====================================  
-### Um storytelling antes dos painéis
+### Um storytelling antes dos paineis
 
 
 ```{r}
