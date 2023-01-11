@@ -1,5 +1,5 @@
 ---
-title: "Deslocamentos e gastos hospitalares dos municípios brasileiros"
+title: "Deslocamentos e gastos hospitalares dos municípios"
 output: 
   flexdashboard::flex_dashboard:
     orientation: columns
