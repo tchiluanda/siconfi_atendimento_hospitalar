@@ -1,0 +1,1589 @@
+---
+title: "Deslocamentos e gastos hospitalares dos municípios brasileiros"
+format: 
+  html:
+    code-fold: true
+    self-contained: false
+editor: visual
+execute:
+  warning: false
+  message: false
+  cache: true
+---
+
+<meta name="author" content="Tesoro Nacional">
+
+<meta name="description" content="A diversidade de possibilidades de atendimentos hospitalares nos municípios brasileiros levam a fluxos de pacientes entre municípios brasileiros? A alocação de recursos municipais em hospitais traz influências nesse eventual fluxo? O painel e o texto que a equipe de dados da STN desenvolveu indica que sim para ambas perguntas">
+
+<meta property="og:image" content="https://github.com/fernandobarbalho/siconfi_hospitais/blob/main/wilker-lauriano-9dkdy9m0YXE-unsplash.jpg">
+
+<meta property="og:description" content="Entenda os fluxos de pacientes hospitalares entre municípios brasileiros e suas relações com as despesas públicas">
+
+<meta property="og:title" content="Internações hospitalares e deslocamentos">
+
+<meta name="twitter:card" content="summary">
+
+```{=html}
+<meta name="twitter:title" content="
+Internações hospitalares e deslocamentos
+">
+```
+<meta name="twitter:description" content="Entenda os fluxos de pacientes hospitalares entre municípios brasileiros e suas relações com as despesas públicas.">
+
+<meta name="twitter:site" content="@TesouroNacional">
+
+<meta name="twitter:creator" content="@barbalhofernand">
+
+<meta name="twitter:image" content="https://github.com/fernandobarbalho/siconfi_hospitais/blob/main/wilker-lauriano-9dkdy9m0YXE-unsplash.jpg">
+
+```{=html}
+<style>
+div.comment {
+background-color: #DBDBDB;
+padding: 10px;
+border: 1px solid black;
+margin-left: 25px;
+border-radius: 5px;
+font-style: italic;
+}
+
+</style>
+```
+```{r}
+knitr::include_graphics("wilker-lauriano-9dkdy9m0YXE-unsplash.jpg")
+```
+
+Foto por <a href="https://unsplash.com/@willph?utm_source=unsplash&utm_medium=referral&utm_content=creditCopyText">Wilker Lauriano</a> on <a href="https://unsplash.com/s/photos/hospital-brazil?utm_source=unsplash&utm_medium=referral&utm_content=creditCopyText">Unsplash</a>
+
+```{r setup}
+library(tidyverse)
+library(geobr)
+library(readxl)
+library(basedosdados)
+library(viridis)
+library(sf)
+library(ggrepel)
+library(colorspace)
+library(patchwork)
+library(easyalluvial)
+
+dataset_analise <- readRDS("~/Github/siconfi_atendimento_hospitalar/dataset_analise_2021.RDS")
+
+
+
+load("~/Github/siconfi_atendimento_hospitalar/dados_auxiliares_2021.RData")
+
+mun_sel_nivel_1A<- 
+  municipios_seat %>%
+  inner_join(
+    REGIC_trabalho%>%
+      filter(nivel_hierarquia=="1A")%>%
+      mutate(code_muni = cod_cidade))
+
+mun_sel_nivel_1B<- 
+  municipios_seat %>%
+  inner_join(
+    REGIC_trabalho%>%
+      filter(nivel_hierarquia=="1B")%>%
+      mutate(code_muni = cod_cidade))
+
+
+mun_sel_nivel_1C<- 
+  municipios_seat %>%
+  inner_join(
+    REGIC_trabalho%>%
+      filter(nivel_hierarquia=="1C")%>%
+      mutate(code_muni = cod_cidade))
+  
+
+mun_sel_nivel_2A<- 
+  municipios_seat %>%
+  inner_join(
+    REGIC_trabalho%>%
+      filter(nivel_hierarquia=="2A")%>%
+      mutate(code_muni = cod_cidade))
+
+
+library(readr)
+de_para_hierarquia <- read_delim("de_para_hierarquia.csv", 
+    delim = ";", escape_double = FALSE, trim_ws = TRUE)
+
+
+```
+
+Nos próximos gráficos e parágrafos vamos mostrar que o atendimento hospitalar no Brasil requer com muita frequência deslocamentos dos pacientes para cidades diferentes das suas residências. Para sermos mais precisos, em torno de 3,6 milhões de deslocamentos desse tipo somente no ano de 2020. Na maioria das vezes essas viagens não ultrapassam as cidades mais próximas, porém, em muitas situações, alcançam os milhares de quilômetros.
+
+Essa constatação é decorrente de uma investigação que se originou a partir dos dados sobre gastos em atendimento hospitalar e ambulatorial. A partir deles, é possível detectar uma imensa desigualdade entre os municípios brasileiros: a grande maioria das localidades de pequeno porte com gastos bastante inferiores às de médio e grande porte. Essa observação, por sua vez, nos levou a questionar se a desigualdade de gastos geraria fluxos significativos de pacientes entre cidades com baixa capacidade hospitalar para aquelas com maiores disponibildiades de infra-estrutura de atendimento.
+
+Com o apoio de um modelo de influência de cidades produzido pelo IBGE conseguimos mostrar que o fenômeno dos deslocamentos de pacientes ocorre e atinge principalmente os municípios menores, com menos capacidade de gestão e de menor gastos proporcional em atendimento hospitalar e ambulatorial. Por outro lado, alguns poucos municípios maiores, com mais capacidade de influência e de gestão, passam a receber pacientes de fora aumentando a demanda por seus serviços de sáude.
+
+## Uma rápida apresentação sobre os gastos em atendimento hospitalar e ambulatorial
+
+O Atendimento Hospitalar e Ambulatorial é uma das sub-funções de governo relacionadas à saúde pública. Vejamos o que revelam os dados disponibilizados pela Secretaria do Tesouro Nacional (STN) sobre a divisão desse tipo de gasto entre as três esferas de governo.
+
+```{r fig.height=4, fig.align='left'}
+
+sub_funcao_saude_Uniao_2019 <- read_csv("sub_funcao_saude_Uniao_2019.csv")
+sub_funcao_saude_UF_2019 <- read_csv("sub_funcao_saude_UF_2019.csv")
+sub_funcao_saude_Municipios_2019 <- read_delim("sub_funcao_saude_Municipios_2019.csv", 
+    ";", escape_double = FALSE, locale = locale(decimal_mark = ",", 
+        grouping_mark = "."), trim_ws = TRUE)
+
+
+sub_funcao_saude_Uniao_2019 %>%
+  mutate(Esfera = "União") %>%
+  select(Esfera,sub_funcao, VALUE) %>%
+  bind_rows(
+    sub_funcao_saude_UF_2019 %>%
+      mutate(Esfera = "Estados") %>%
+      select(Esfera,sub_funcao, VALUE),
+    sub_funcao_saude_Municipios_2019 %>%
+      mutate(Esfera = "Municípios") %>%
+      select(Esfera,sub_funcao, VALUE)
+  ) %>%
+  group_by(Esfera,sub_funcao) %>%
+  summarise(
+    valor_total = sum(VALUE)
+  ) %>%
+  ungroup() %>%
+  mutate(sub_funcao = reorder(sub_funcao,valor_total)) %>%
+  ggplot() +
+  geom_col(aes(y=sub_funcao , x=valor_total/10^9, fill= Esfera)) +
+  #scale_fill_viridis(discrete = TRUE)+
+  scale_fill_discrete_qualitative(palette= "Pastel 1")+
+  scale_x_continuous(labels=function(x) format(x, big.mark = ".", scientific = FALSE))+
+  theme_light() +
+  theme(
+    panel.grid = element_blank(),
+    panel.background = element_rect(fill = "#15202B")
+  )+
+  labs(
+    x= "Gasto em R$ (bi)",
+    y="",
+    caption = "Gastos por sub-função de sáude para os níveis federativos"
+  )
+```
+
+A figura acima mostra a distribuição dos gastos das sub-funções de saúde entre as três esferas de governo. Percebe-se que a Assistência Hospitalar e Ambulatorial apresenta-se no topo do ranking. Além disso, fica claro que há uma divisão equilibrada dos gastos entre os Estados, municípios e União.
+
+Ocorre, porém, que quando se foca os gastos nos diversos municípios brasileiros, o que se vê é que não há uma distribuição consistente. Vários municípios, principalmente de pequeno porte, executam em seu orçamento um percentual pequeno do total dos gastos em saúde nos serviços hospitalares e ambulatoriais. Veja os três gráficos abaixo.
+
+```{r}
+
+library(forcats)
+sub_funcao_saude_Municipios_2019 %>%
+  #filter(sub_funcao %in% c("Atenção Básica" )) %>%
+  filter(VALUE>0) %>%
+  group_by(NO_ENTE) %>% 
+  summarise(
+    total = sum(VALUE)
+  ) %>%
+  ungroup() %>%
+  #slice_max(total, n= 30) %>%
+  inner_join(
+    sub_funcao_saude_Municipios_2019 %>%
+      filter(VALUE>0) %>%
+      #filter(sub_funcao %in% c("Assistência Hospitalar e Ambulatorial", "Atenção Básica" )) %>%
+      group_by(NO_ENTE, sub_funcao) %>% 
+      summarise(
+        total_sub_funcao = sum(VALUE)
+      ) %>%
+      ungroup() #%>%
+      #slice_max(total_sub_funcao, n= 20)
+  ) %>%
+mutate(NO_ENTE = reorder(NO_ENTE,total )) %>%
+ggplot() +
+  geom_col(aes(x=total_sub_funcao, y= NO_ENTE, fill =  fct_reorder(sub_funcao,total_sub_funcao,  sum) ), position = "fill") +
+  scale_fill_viridis( discrete = TRUE) +
+  theme_light() +
+  theme(
+    legend.title = element_blank(),
+    legend.position = "bottom",
+    axis.text.y  = element_blank(),
+    axis.title.y = element_blank(),
+    axis.text.x = element_blank(),
+    axis.title.x = element_blank(),
+    panel.grid = element_blank(),
+    panel.border = element_blank(),
+    axis.ticks = element_blank(),
+    panel.background = element_rect(fill = "#15202B")
+    
+    
+  ) +
+  labs(
+    title = "Gastos dos municípios nas sub-funções de saúde",
+    subtitle= "Todos os municípios"
+  )
+
+```
+
+```{r}
+sub_funcao_saude_Municipios_2019 %>%
+  #filter(sub_funcao %in% c("Atenção Básica" )) %>%
+  filter(VALUE>0) %>%
+  group_by(NO_ENTE) %>% 
+  summarise(
+    total = sum(VALUE)
+  ) %>%
+  ungroup() %>%
+  
+  slice_max(total, n= 30) %>%
+  inner_join(
+    sub_funcao_saude_Municipios_2019 %>%
+      filter(VALUE>0) %>%
+      #filter(sub_funcao %in% c("Assistência Hospitalar e Ambulatorial", "Atenção Básica" )) %>%
+      group_by(NO_ENTE, sub_funcao) %>% 
+      summarise(
+        total_sub_funcao = sum(VALUE/10^6)
+      ) %>%
+      ungroup() %>%
+    mutate(sub_funcao= fct_reorder(sub_funcao,total_sub_funcao,  sum))
+      #slice_max(total_sub_funcao, n= 20)
+  ) %>%
+mutate(NO_ENTE = reorder(NO_ENTE,total )) %>%
+ggplot() +
+  geom_col(aes(x=total_sub_funcao, y= NO_ENTE, fill = sub_funcao ),color="#808080") +
+  scale_fill_viridis( discrete = TRUE) +
+  theme_light() +
+  theme(
+    legend.title = element_blank(),
+    legend.position = "bottom",
+    axis.title.y = element_blank(),
+    panel.grid = element_blank(),
+    panel.background = element_rect(fill = "#15202B")
+  ) +
+  labs(
+    x= "Gastos em R$ (mi)",
+    title ="Gastos dos municípios nas sub-funções de saúde",
+    subtitle= "Municípios com maiores gastos com saúde"
+  )
+
+```
+
+```{r}
+sub_funcao_saude_Municipios_2019 %>%
+  #filter(sub_funcao %in% c("Atenção Básica" )) %>%
+  filter(VALUE>0) %>%
+  group_by(NO_ENTE) %>% 
+  summarise(
+    total = sum(VALUE)
+  ) %>%
+  ungroup() %>%
+  
+  slice_min(total, n= 30) %>%
+  inner_join(
+    sub_funcao_saude_Municipios_2019 %>%
+      filter(VALUE>0) %>%
+      #filter(sub_funcao %in% c("Assistência Hospitalar e Ambulatorial", "Atenção Básica" )) %>%
+      group_by(NO_ENTE, sub_funcao) %>% 
+      summarise(
+        total_sub_funcao = sum(VALUE/10^3)
+      ) %>%
+      ungroup() %>%
+    mutate(sub_funcao= fct_reorder(sub_funcao,total_sub_funcao,  sum))
+      #slice_max(total_sub_funcao, n= 20)
+  ) %>%
+mutate(NO_ENTE = reorder(NO_ENTE,total )) %>%
+ggplot() +
+  geom_col(aes(x=total_sub_funcao, y= NO_ENTE, fill = sub_funcao ), color="#808080") +
+  scale_fill_viridis( discrete = TRUE) +
+  theme_light() +
+  theme(
+    legend.title = element_blank(),
+    legend.position = "bottom",
+    axis.title.y = element_blank(),
+    panel.grid = element_blank(),
+    panel.background = element_rect(fill = "#15202B")
+
+    
+  )+
+  labs(
+    x= "Gastos em R$ (mil)",
+    title ="Gastos dos municípios nas sub-funções de saúde",
+    subtitle= "Municípios com menores gastos com saúde"
+  )
+
+```
+
+O primeiro gráfico mostra as proporções dos gastos nas sub-funções de saúde de todos os municípios do Brasil que estão na base de dados pesquisada [^1]. O segundo exibe os gastos em saúde dos trinta municípios com maiores despesas em saúde e o terceiro mostra a mesma informação, só que foca-se nos trinta municípios com menores despesas.
+
+[^1]: é importante destacar que os dados trabalhados até aqui são oriundos do SICONFI. O SICONFI é o sistema que centraliza as informações de finanças públicas dos entes federativos brasileiros. Especificamente para os gráficos gerados até aqui, usamos como suporte o aplicativo [Meu SICONFI](https://meusiconfi.tesouro.gov.br/Interface_rsiconfi.rmd) que permite baixar com grande facilidade os dados do sistema.
+
+Observe na primeira figura que a cor amarela relativa à **assistência hospitalar** predomina no início, mas depois passa a prevalecer o verde que é a cor de **atenção básica**. Aqui vale destacar que o gráfico está em ordem decrescente do gasto total na soma das sub-funções de saúde. No segundo gráfico percebe-se esse fenômeno com mais clareza: os grandes municípios gastam mais com assistência hospitalar do que com atenção básica. No terceiro gráfico percebe-se o contrário: uma maior quantidade de municípios com gastos maiores em Atenção Básica. Inclusive, nesse caso, pode-se até observar que alguns municípios não apresentam gastos de assistência hospitalar e ambulatorial.
+
+É esse desequilíbrio entre os gastos entre os municípios brasileiros que nos fez questionar se o impacto dos gastos municipais em hospitais poderia gerar fluxos importantes de pacientes para além das fronteiras municipais. Nos próximos tópicos vamos verficar as dinâmicas dos deslocamentos de pacientes e ao final fazer a relação entre as entradas e saídas de paciente com a execução orçamentária dos municípios.
+
+## Deslocamentos hospitalares e Regiões de Influência
+
+Para começar a nossa análise vamos mostrar como uma amostra aleatória de mais de 1 milhão de internações hospitalares ocorridas em 2020 em todo o Brasil se divide entre atendimentos locais e com deslocamentos. [^2].
+
+[^2]: os dados de internações são extraídos do Sistema de Internações hospitalares do SUS. Para o caso específico desse trabalho usamos o pacote [{microdatasus}](https://github.com/rfsaldanha/microdatasus) desenvolvido por Saldanha et al (2019)
+
+```{r fig.width=4, fig.height=1, fig.align='left'}
+
+#Quantidade de atendimento total por tipo de deslocamento
+dataset_analise %>%
+  ggplot() +
+  geom_bar(aes(y=factor(deslocamento,  labels= c("Local","Com deslocamento"))), fill= "white")+
+  theme_light() +
+  scale_x_continuous(labels = function(x){format(x,big.mark = ".",decimal.mark = ",", scientific =FALSE)} )+
+  theme(
+    panel.background = element_rect(fill = "#15202B"),
+    panel.grid = element_blank(),
+    axis.title.y = element_blank(),
+    axis.text.x = element_text(hjust = 0.7)
+  ) +
+  labs(
+    x= "Número de internações"
+  )
+
+
+```
+
+Observa-se no gráfico que os atendimentos locais, ou seja feitos na própria cidade do paciente, são bem mais numerosos do que os que exigem deslocamento. No entanto, ainda assim, a amostra revela mais de 360 mil procedimentos hospitalares que levaram os pacientes a se locomoverem de cidade. Considerando que essa é uma amostra de 10% do total de internações realizadas em 2020, não é difícil extrapolar que aproximadamente 3,6 milhões de atendimentos foram realizados fora das cidades de residência dos pacientes. Somente a título de comparação demográfica, a população do Uruguai foi estimada em [3,5 milhões de habitantes](https://datosmacro.expansion.com/paises/uruguay) em 2020.
+
+A figura logo abaixo mostra os rankings que são elaborados a partir da amostra. São três gráficos: as cidades que mais tiveram pacientes se deslocando para outros municípios; aquelas que mais receberam pacientes de fora; e as cidades com maior número de atendimentos locais.
+
+```{r fig.width=8, fig.height=4}
+g1<-
+dataset_analise %>%
+  filter(deslocamento==1) %>%
+  group_by(nome_nivel_hierarquia.x, mun_res_nome.x) %>%
+  summarise(
+    quantidade_deslocamentos = n()
+  ) %>%
+  ungroup() %>%
+  slice_max(order_by = quantidade_deslocamentos, n=20) %>%
+  mutate(munic_res = reorder(mun_res_nome.x,quantidade_deslocamentos)) %>%
+  ggplot(aes(x=quantidade_deslocamentos, y=munic_res)) +
+  geom_col(fill="white") +
+  theme(
+    panel.background = element_rect(fill = "#15202B"),
+    panel.grid = element_blank(),
+    axis.title.y = element_blank(),
+    axis.text.x = element_text(angle = 90),
+    axis.title.x = element_text(hjust = 0.8)
+  ) +
+  labs(
+    x= "Nº de internações",
+    title = "Saída"
+  )
+
+g2<-
+dataset_analise %>%
+  filter(deslocamento==1) %>%
+  group_by(nome_nivel_hierarquia.y,mun_res_nome.y) %>%
+  summarise(
+    quantidade_deslocamentos = n()
+  ) %>%
+  ungroup() %>%
+  slice_max(order_by = quantidade_deslocamentos, n=20) %>%
+  mutate(munic_res = reorder(mun_res_nome.y,quantidade_deslocamentos)) %>%
+  ggplot(aes(x=quantidade_deslocamentos, y=munic_res )) +
+  geom_col(fill = "white")+
+  theme(
+    panel.background = element_rect(fill = "#15202B"),
+    panel.grid = element_blank(),
+    axis.title.y = element_blank(),
+    axis.text.x = element_text(angle = 90),
+    axis.title.x = element_text(hjust = 0.7)
+  ) +
+  labs(
+    x= "Nº de internações",
+    title = "Entrada"
+  )
+
+g3<-
+dataset_analise %>%
+  filter(deslocamento==0) %>%
+  group_by(nome_nivel_hierarquia.x, mun_res_nome.x) %>%
+  summarise(
+    quantidade_deslocamentos = n()
+  ) %>%
+  ungroup() %>%
+  slice_max(order_by = quantidade_deslocamentos, n=20) %>%
+  mutate(munic_res = reorder(mun_res_nome.x,quantidade_deslocamentos)) %>%
+  ggplot(aes(x=quantidade_deslocamentos, y=munic_res)) +
+  geom_col()+
+  geom_col(fill = "white")+
+  theme(
+    panel.background = element_rect(fill = "#15202B"),
+    panel.grid = element_blank(),
+    axis.title.y = element_blank(),
+    axis.text.x = element_text(angle = 90)
+  ) +
+  labs(
+    x= "Nº de internações",
+    title = "Local"
+  )
+
+
+g1|g2|g3
+
+
+
+```
+
+O efeito população faz com que São Paulo apareça entre as três primeiras posições do ranking nos três gráficos. Em todo caso, percebe-se que o maior destaque é nos atendimentos locais. É imensa a diferença da grande metrópole nacional em relação às outras cidades. Nota-se, ainda, no ranking do atendimento local a predominância das metrópoles e grandes cidades nacionais.
+
+Por outro lado, observa-se que municípios de populações menores que as metróploes são as mais frequentes no ranking das saídas. Já nas entradas percebe-se que Recife é a cidade que mais recebe pacientes de fora. A capital de Pernambuco supera São Paulo, inclusive em valores absolutos. Vale lembrar que a população de São Paulo é quase oito vezes maior do que a de Recife.
+
+Esses gráficos e esses achados mais interessantes nos inspiram a fazer as análises sobre deslocamentos para atendimentos hospitalar tendo como referência o quanto as cidades têm capacidade de gestão e influência sobre as outras. Usando essas duas variáveis, o [IBGE](https://www.ibge.gov.br/geociencias/organizacao-do-territorio/redes-e-fluxos-geograficos/15798-regioes-de-influencia-das-cidades.html?=&t=acesso-ao-produto) elaborou um modelo hierárquico das cidades brasileiras conhecido como REGIC. Vamos utilizar esse modelo em vários dos gráficos a partir de agora.
+
+Começamos mostrando quais são os níveis hierárquicos do REGIC e como se dividem territoralmente no mapa brasileiro. Veja abaixo.
+
+```{r fig.width=20, fig.height=10, fig.dpi=300}
+#mapa dos municípios brasileiros por nível hierárquico do REGIC
+
+pop_municipios$pop_cut<- cut(pop_municipios$populacao, 
+                             breaks = c(0,
+                                        2000,
+                                        5000,
+                                        10000,
+                                        20000,
+                                        50000,
+                                        100000,
+                                        500000,
+                                        max(pop_municipios$populacao)), 
+                             labels= c("0-2.000",
+                                       "2.001-5.000",
+                                       "5.000-10.000",
+                                       "10.001-20.000",
+                                       "20.001-50.000",
+                                       "50.001-100.000",
+                                       "100.001-500.000",
+                                       ">500.000"))
+
+
+REGIC_trabalho$nome_nivel_hierarquia_ordenado<-
+factor(REGIC_trabalho$nome_nivel_hierarquia, levels = unique(REGIC_trabalho$nome_nivel_hierarquia[order(REGIC_trabalho$nivel_hierarquia)]))
+
+municipios_seat<- cbind(municipios_seat, st_coordinates(st_centroid(municipios_seat)))
+
+
+
+
+municipios_seat %>%
+  inner_join(
+    REGIC_trabalho %>%
+      mutate(code_muni = cod_cidade))%>%
+  inner_join(
+        pop_municipios %>%
+      mutate(code_muni = as.numeric(id_municipio))
+  ) %>%
+  ggplot()+
+  geom_sf(data = estados_mapa, fill=NA, color="#808080")+
+  geom_sf(aes( fill= pop_cut),pch=21, color="#444444", size=2.9)+
+  geom_text_repel(data = mun_sel_nivel_1A,aes(x=X, y=Y, label= name_muni),fontface = "bold", color="white")+
+  geom_text_repel(data = mun_sel_nivel_1B,aes(x=X, y=Y, label= name_muni),fontface = "bold", color="white")+
+  geom_text_repel(data = mun_sel_nivel_1C,aes(x=X, y=Y, label= name_muni),fontface = "bold", color="white")+
+  geom_text_repel(data = mun_sel_nivel_2A,aes(x=X, y=Y, label= name_muni),fontface = "bold", color="white", force =2)+
+  scale_fill_viridis(discrete = TRUE)+
+  labs(
+    fill= str_wrap("População (nº de habitantes)",20) 
+  )+
+  theme_light() +
+  theme(
+    text = element_text(size=20),
+    panel.background = element_rect(fill = "#15202B"),
+    panel.grid = element_blank(),
+    axis.title.x = element_blank(),
+    axis.title.y = element_blank(),
+    strip.background = element_rect(fill = "#505050"),
+    strip.text = element_text(color = "white"),
+    axis.text = element_blank(),
+    legend.key = element_rect(fill = "#15202B")
+    
+  )+
+  facet_wrap(nome_nivel_hierarquia_ordenado~.)
+
+```
+
+Como se vê na figura acima, o REGIC divide as cidades do Brasil em onze níveis e sub-níveis hierárquicos. Da esquerda para a direita, de cima para baixo, é possível perceber a gradação hierárquica.
+
+**Algumas palavras a mais sobre o REGIC**
+
+::: comment
+No primeiro nível da hierarquia estão as **Metrópoles**. Conforme o [IBGE](https://biblioteca.ibge.gov.br/visualizacao/livros/liv101728_folder.pdf), tratam-se "\[d\]os 15 principais centros urbanos, dos quais todas as Cidades existentes no País recebem influência direta, seja de uma ou mais Metrópoles simultaneamente. A região de influência dessas centralidades é ampla e cobre toda a extensão territorial do País, com áreas de sobreposição em determinados contatos".
+
+Quando se trata de metrópoles temos no maior nível hierárquico o municípios de São Paulo como a única **grande metrópole nacional**. Brasília e Rio de Janeiro, vêm em seguida como as **metrópoles nacionais.** Por fim, existem doze **metrópoles**, representadas por 11 capitais mais influentes e Campinas. Observa-se nos mapas acima que todos as cidades sedes das metrópoles possuem mais de 500 mil habitantes, destacadas na cor amarela, com exceção de Vitória.
+
+A próxima camada hierárquica estão as **Capitais Regionais**. Conforme o IBGE, "são os centros urbanos com alta concentração de atividades de gestão, mas com alcance menor em termos de região de influência em comparação com as Metrópoles. Ao todo, 97 Cidades foram classificadas como Capitais Regionais em todo o País". Há aqui três sub-divisões:
+
+a\) Capital Regional A, com 8 capitais de estados e Ribeirão Preto-SP. As populações dos municípios nesse caso, como pode ser visto no mapa, estão acima dos 500.000 habitantes;
+
+b\) Capital Regional B, envolve duas capitais de estado: Palmas-TO e Porto Velho Rondônia e mais outras 22 cidades. Segundo o IBGE esses municípios são "centralidades de referência no interior dos Estados". As populações dos municípios, em média, ultrapassam 500.000 habitantes.
+
+c\) Capital Regional C - possui 64 Cidades, dentre elas três Capitais Estaduais: os Municípios de Boa Vista(RR), Rio Branco (AC) e Macapá/AP, todas pertencentes à Região Norte. Aqui a média das populaçoes é de 300.000 habitantes.
+
+No terceiro nível hierárquico estão os **Centro Sub-Regionais** agregando 352 cidades. Conforme o [IBGE](http://biblioteca.ibge.gov.br/index.php/biblioteca-catalogo?view=detalhes&id=2101728) "possuem atividades de gestão menos complexas, com áreas de influência de menor extensão que as das Capitais Regionais. São também cidades de menor porte populacional, com média nacional de 85 mil habitantes".
+
+No quarto nível hierárquico estão os **Centros de Zona**. Reune municípios que "caracterizam-se por menores níveis de atividades de gestão, polarizando um número inferior de Cidades vizinhas em virtude da atração direta da população por comércio e serviços baseada nas relações de proximidade. São 398 Cidades com média populacional de 30 mil habitantes"
+
+O último nível hierárquico corresponde aos **Centros Locais**. Aqui a influência restringe-se aos próprios limites territoriais. Os municípios não costumam ser destino principal de nenhuma outra cidade. Além disso, caracterizam-se pela fraca centralidade de gestão e com grande dependência de centros de maior hierarquia. Os centros locais representam a grande maioria dos municípios brasileiros: 4037 centros urbanos. A média populacional é de 12,5 mil habitantes.
+
+É importante observar o conceito de arranjo populacional que é utilizado pelo IBGE para determinar as cidades e suas áreas de influência. Todas as metrópoles e ainda algumas capitais regionais são mapeadas como arranjos populacionais que envolvem mais de um município.
+
+Dessa forma, quando se fala em uma cidade que é núcleo desses arranjos, a referência para o REGIC se expande para todos os municípios que englobam o arranjo. Por exemplo, para o REGIC, Recife engloba não só os limites da capital como também os da sua região metropolitana. Ou então quando se fala em Juazeiro do Norte-CE, engloba-se também Crato e Barbalha, que estão no mesmo arranjo populacional.
+
+Para a nossa análise, apesar de usarmos o REGIC como referência, utilizamos os dados de fluxo de paciente apenas da cidade núcleo dos arranjos populacionais. Entendemos que essa opção não traz prejuízos analíticos para os objetivos deste trabalho.
+:::
+
+## As regiões de influência: entradas e saídas
+
+Como as regiões de influência se associam aos fluxos de pacientes? Existem diversas formas de se responder essa pergunta. Vamos começar mostrando três gráficos: o primeiro evidencia o número de internações para cada grupo hierárquico; o segundo indica como a demanda dos pacientes é atendida de acordo com o local de internação: hospitais locais ou outros municípios. Por fim, o terceiro gráfico revela a origem dos pacientes nos atendimentos hospitalares: pacientes locais ou pacientes vindos de outros municípios. Sempre bom lembrar que os dados trabalhados nessa análise referem-se a uma amostra do total de internações ocorridas no Brasil em 2020.
+
+```{r fig.width=8, fig.height=8}
+
+#Distribuição de quantidade de internações distribuição de tipos de internação por regic 
+g1<-dataset_analise %>%
+  filter(!is.na(nome_nivel_hierarquia.x)) %>%
+  group_by(nome_nivel_hierarquia.x) %>%
+  summarise(
+    quantidade_internacoes =n()
+  )%>%
+  mutate(nome_nivel_hierarquia = reorder(nome_nivel_hierarquia.x, quantidade_internacoes)) %>%
+  ungroup() %>%
+  bind_rows(
+    dataset_analise %>%
+      filter(deslocamento == 1,
+             !is.na(nome_nivel_hierarquia.y)) %>%
+      group_by(nome_nivel_hierarquia.y) %>%
+      summarise(
+        quantidade_internacoes =n()
+      )%>%
+      mutate(nome_nivel_hierarquia= reorder(nome_nivel_hierarquia.y, quantidade_internacoes)) %>%
+      ungroup()
+  ) %>%
+  ggplot() +
+  geom_col(aes(x=quantidade_internacoes, y=fct_reorder(nome_nivel_hierarquia, quantidade_internacoes,sum)),fill="white")+
+  scale_x_continuous(labels = function(x){format(x,big.mark = ".",decimal.mark = ",", scientific =FALSE)} )+
+  theme_light() +
+  theme(
+    panel.background = element_rect(fill = "#15202B"),
+    panel.grid = element_blank(),
+    axis.title.x = element_blank(),
+    axis.title.y = element_blank(),
+  ) +
+  labs(
+    title = "Demanda de internação"
+  )
+
+
+
+
+#Distribuição de quantidade de internações distribuição de tipos de internação por regic 
+g2<-dataset_analise %>%
+  filter(!is.na(nome_nivel_hierarquia.x)) %>%
+  mutate(deslocamento = as.factor(deslocamento)) %>%
+  group_by(deslocamento,nome_nivel_hierarquia.x) %>%
+  summarise(
+    quantidade_internacoes =n()
+  )%>%
+  mutate(tipo_deslocamento = ifelse(deslocamento=="0","Hosítais locais","Outros municípios")) %>%
+  mutate(nome_nivel_hierarquia = reorder(nome_nivel_hierarquia.x, quantidade_internacoes)) %>%
+  ungroup()  %>%
+  # bind_rows(
+  #   dataset_analise %>%
+  #     filter(deslocamento == 1,
+  #            !is.na(nome_nivel_hierarquia.y)) %>%
+  #     mutate(deslocamento = as.factor(deslocamento)) %>%
+  #     group_by(deslocamento,nome_nivel_hierarquia.y) %>%
+  #     summarise(
+  #       quantidade_internacoes =n()
+  #     )%>%
+  #     mutate(tipo_deslocamento = "chegada") %>%
+  #     mutate(nome_nivel_hierarquia= reorder(nome_nivel_hierarquia.y, quantidade_internacoes)) %>%
+  #     ungroup()
+  # ) %>%
+  ggplot() +
+  scale_fill_discrete_qualitative(palette = "Dark 3")+ 
+  geom_col(aes(x=quantidade_internacoes, y=fct_reorder(nome_nivel_hierarquia, quantidade_internacoes,sum), fill=str_wrap(tipo_deslocamento,10)), position="fill")+
+  theme_light() +
+  theme(
+    panel.background = element_rect(fill = "#15202B"),
+    panel.grid = element_blank(),
+    axis.title.x = element_blank(),
+    axis.title.y = element_blank(),
+    legend.title = element_blank()
+  ) +
+  labs(
+    title= "Pacientes: Local de atendimento"
+  )  
+
+
+#Distribuição de quantidade de internações distribuição de tipos de internação por regic 
+g3<-dataset_analise %>%
+  filter(!is.na(nome_nivel_hierarquia.x),
+         deslocamento == 0,) %>%
+  mutate(deslocamento = as.factor(deslocamento)) %>%
+  group_by(deslocamento,nome_nivel_hierarquia.x) %>%
+  summarise(
+    quantidade_internacoes =n()
+  )%>%
+  mutate(tipo_deslocamento = ifelse(deslocamento=="0","Locais","Outros muncípios")) %>%
+  mutate(nome_nivel_hierarquia = reorder(nome_nivel_hierarquia.x, quantidade_internacoes)) %>%
+  ungroup() %>%
+  bind_rows(
+    dataset_analise %>%
+      filter(deslocamento == 1,
+             !is.na(nome_nivel_hierarquia.y)) %>%
+      mutate(deslocamento = as.factor(deslocamento)) %>%
+      group_by(deslocamento,nome_nivel_hierarquia.y) %>%
+      summarise(
+        quantidade_internacoes =n()
+      )%>%
+      mutate(tipo_deslocamento = "Outros muncípios") %>%
+      mutate(nome_nivel_hierarquia= reorder(nome_nivel_hierarquia.y, quantidade_internacoes)) %>%
+      ungroup()
+  ) %>%
+  ggplot() +
+  scale_fill_discrete_qualitative(palette = "Dynamic")+ 
+  geom_col(aes(x=quantidade_internacoes, y=fct_reorder(nome_nivel_hierarquia, quantidade_internacoes,sum), fill=str_wrap(tipo_deslocamento,10)), position="fill")+
+  theme_light() +
+  theme(
+    panel.background = element_rect(fill = "#15202B"),
+    panel.grid = element_blank(),
+    axis.title.x = element_blank(),
+    axis.title.y = element_blank(),
+    legend.title = element_blank()
+  )+
+  labs(
+    title= "Hospitais: Origem dos pacientes"
+  )  
+
+
+g1/g2/g3
+
+```
+
+No primeiro gráfico vê-se que os centros locais lideram o ranking de quantidade de atendimentos. A soma das populações dos mais de 4000 municípios desse nível hierárquico ajuda a justificar essa posição. A combinação de efeito da quantidade de municípios e de população dos municípios explica grande parte do ranking. Mas, na verdade, os principais achados encontram-se nos outros dois gráficos.
+
+Pelo segundo gráfico vê-se que os centros locais se destacam por ter a maior proporção de atendimentos dos seus residentes em outras cidades. Isso combina com o que se esperava da classificação REGIC, onde esses municípios se caracterizam pela pouca autonomia de gestão. Destaca-se, ainda, a grande necessidade de deslocamento dos pacientes residentes nos centros de zona. No sentido contrário, todos os sub-níveis hierárquicos de metrópoles destacam-se pela grande autonomia no atendimento de seus pacientes.
+
+O terceiro gráfico está ordenado pelo número total de atendimentos realizados em cada nível REGIC. Em relação à recepção de pacientes de outras cidades, vê-se um forte papel desempenhado por Metrópole, mas, ainda mais importante, destaca-se o papel dos níveis intermediários da hierarquia REGIC, representados principalmente por capitais regionais e centros sub-regionais. Aqui pode-se inferir que os pacientes procuram primeiro o atendimento nos municípios de nível de influência um pouco mais elevadao e possivelmente mais próximos ao seu endereço. Em outras palavras, não há necessariamente um fluxo direto para as metrópoles. Um pouco mais adiante vamos mostrar isso de uma forma mais evidente com os fluxos entre as classes hierárquicas.
+
+Vamos nesse momento para uma outra análise: como fica no mapa do Brasil a informação de entradas e saídas de pacientes? Com os dados de atendimentos calculamos para cada cidade qual o percentual de pacientes que são atendidos em outro municípios. Da mesma forma, calculamos para cada cidade quanto do total de pacientes atendidos em sua rede hospitalar são oriundos de outros centros urbanos. Vamos começar mostrando um gráfico que trabalha com o percentual de saída de pacientes para outras localidades.
+
+```{r fig.width=20, fig.height=10, fig.dpi=500}
+
+agrupamento_municipio<-
+    dataset_analise %>%
+      filter(
+             deslocamento ==1) %>%
+      group_by(munic_res) %>%
+      summarise(
+        numero_internacoes = n()
+      ) %>%
+      mutate(code_muni = munic_res,
+             tipo_deslocamento = "saida" ) %>%
+      bind_rows(
+        dataset_analise %>%
+          filter(
+                 deslocamento ==1) %>%
+          group_by(codufmun) %>%
+          summarise(
+            numero_internacoes = n()
+          ) %>%
+          mutate(code_muni = codufmun,
+                 tipo_deslocamento = "entrada"),
+        dataset_analise %>%
+          filter(
+                 deslocamento ==0) %>%
+          group_by(codufmun) %>%
+          summarise(
+            numero_internacoes = n()
+          ) %>%
+          mutate(code_muni = codufmun,
+                 tipo_deslocamento = "local")
+      ) %>%
+  group_by(code_muni, tipo_deslocamento) %>%
+  summarise(
+    total_internacoes = sum(numero_internacoes)
+  )
+
+agrupamento_municipio<-
+agrupamento_municipio %>%
+  tidyr::pivot_wider(names_from = tipo_deslocamento, values_from = total_internacoes) %>%
+  mutate(liquido = ifelse(is.na(entrada),0,entrada)+
+           ifelse(is.na(local),0,local)-
+           ifelse(is.na(saida),0,saida))
+
+agrupamento_municipio<-
+agrupamento_municipio %>%
+  mutate(local = ifelse(is.na(local),0,local),
+         saida = ifelse(is.na(saida),0,saida),
+         entrada = ifelse(is.na(entrada),0,entrada),
+         perc_saida = saida/(saida+local)*100,
+         perc_entrada = entrada/(entrada+local)*100,
+         perc_entrada = ifelse(is.nan(perc_entrada),0,perc_entrada))
+  
+
+municipios_seat %>%
+  mutate(code_muni = str_sub(as.character(code_muni),1,6)) %>%
+  inner_join(agrupamento_municipio
+  ) %>%
+  inner_join(
+    REGIC_trabalho%>%
+      mutate(code_muni = str_sub(as.character(cod_cidade),1,6))
+  ) %>%
+  ggplot()+
+  geom_sf(data = estados_mapa, fill=NA, color="#808080")+
+  geom_sf(aes( fill= perc_saida),pch=21, color="#444444", size=2.9)+
+  geom_text_repel(data = mun_sel_nivel_1A,aes(x=X, y=Y, label= name_muni),fontface = "bold", color="white")+
+  geom_text_repel(data = mun_sel_nivel_1B,aes(x=X, y=Y, label= name_muni),fontface = "bold", color="white")+
+  geom_text_repel(data = mun_sel_nivel_1C,aes(x=X, y=Y, label= name_muni),fontface = "bold", color="white")+
+  geom_text_repel(data = mun_sel_nivel_2A,aes(x=X, y=Y, label= name_muni),fontface = "bold", color="white", force =2)+
+  scale_fill_continuous_sequential(palette= "Heat 2")+
+  labs(
+    fill= str_wrap("% de pacientes internados em outros municípios",15) 
+  )+
+  theme_light() +
+  theme(
+    text = element_text(size=20),
+    panel.background = element_rect(fill = "black"),
+    panel.grid = element_blank(),
+    axis.title.x = element_blank(),
+    axis.title.y = element_blank(),
+    strip.background = element_rect(fill = "#505050"),
+    strip.text = element_text(color = "white"),
+    axis.text = element_blank(),
+    legend.key = element_rect(fill = "#15202B")
+    
+  )+
+  facet_wrap(nome_nivel_hierarquia_ordenado~.)
+
+
+```
+
+Como se vê no mapa, os centros locais concentram os pontos com tons vermelhos mais fortes que mostram os municípios com elevado percentual de pacientes que precisam viajar para serem atendidos em hospitais. Todos os sub-níveis hierárquicos de metrópoles, por outro lado, apresentam-se com cores amarelas que representam baixa necessidade de deslocamentos.
+
+Os mapas reforçam o que se esperava dos níveis hierárquicos extremos no que diz respeito à autonomia dada pelas capacidades de gestão. Onde há poucos serviços e baixa gestão, há forte dependência de estruturas hospitalares de outros municípios. Pelo lado contrário, cidades como São Paulo, Brasília, Rio de Janeiro, ou mesmo capitais regionais como São Luis e Maceió, oferecem estruturas administrativas e serviços capazes de prover o atendimento hospitalar necessário para seus pacientes.
+
+Vamos ver agora como ficam os mapas quando se analisa a chegada de pacientes vindos de outros municípios.
+
+```{r fig.width=20, fig.height=10, fig.dpi=500}
+municipios_seat %>%
+  mutate(code_muni = str_sub(as.character(code_muni),1,6)) %>%
+  left_join(agrupamento_municipio
+  ) %>%
+  inner_join(
+    REGIC_trabalho%>%
+      mutate(code_muni = str_sub(as.character(cod_cidade),1,6))
+  ) %>%
+  ggplot()+
+  geom_sf(data = estados_mapa, fill=NA, color="#808080")+
+  geom_sf(aes( fill= perc_entrada),pch=21, color="#444444", size=2.9)+
+  geom_text_repel(data = mun_sel_nivel_1A,aes(x=X, y=Y, label= name_muni),fontface = "bold", color="white")+
+  geom_text_repel(data = mun_sel_nivel_1B,aes(x=X, y=Y, label= name_muni),fontface = "bold", color="white")+
+  geom_text_repel(data = mun_sel_nivel_1C,aes(x=X, y=Y, label= name_muni),fontface = "bold", color="white")+
+  geom_text_repel(data = mun_sel_nivel_2A,aes(x=X, y=Y, label= name_muni),fontface = "bold", color="white", force =2)+
+  scale_fill_continuous_sequential(palette= "Heat 2")+
+  labs(
+    fill= str_wrap("% de pacientes internados de outros municípios",15) 
+  )+
+  theme_light() +
+  theme(
+    text = element_text(size=20),
+    panel.background = element_rect(fill = "black"),
+    panel.grid = element_blank(),
+    axis.title.x = element_blank(),
+    axis.title.y = element_blank(),
+    strip.background = element_rect(fill = "#505050"),
+    strip.text = element_text(color = "white"),
+    axis.text = element_blank(),
+    legend.key = element_rect(fill = "#15202B")
+    
+  )+
+  facet_wrap(nome_nivel_hierarquia_ordenado~.)
+```
+
+As cores do mapa mostram o percentual de pacientes atendidos nas redes hospitalares de cada cidade que são oriundos de outros municípios. É interessante observar que a escala prevê que se chegue a 0% de pacientes vindos de outros municípios. Para esses casos a cor dos pontos é próxima de branco. Se observarmos o mapa dos centros locais vemos uma grande predominância dessa situação.
+
+Por outro lado, as cores mais quentes são as que representam os municípios com alta receptividade de pacientes de fora. Aqui se percebe o papel importante das metrópoles, que já era esperado dado o nível de influência previsto no REGIC. O achado mais revelador é o grande número de pontos em tons vermelhos fortes presentes nos mapas das capitais regionais e dos centros sub-regionais. Isso reforça o que já havia sido observado anteriormente sobre a importância desses tipos de centros urbanos para a recepção de pacientes vindos de cidades com baixa capacidade de gestão.
+
+Nos próximos gráficos exploramos como se dá o fluxo entre os níveis hierárquicos. Você verá que ficará mais claro qual o papel dos níveis hierárquicos intermediários na absorção dos pacientes que precisam se deslocar de suas cidades de residência.
+
+```{r fig.width=20, fig.height=10}
+
+
+ordem_y<- 
+dataset_analise %>%
+  filter(deslocamento==1,
+         nome_nivel_hierarquia.x == "Centro Local",
+         !(is.na(nome_nivel_hierarquia.y))) %>%
+  group_by(nome_nivel_hierarquia.y) %>%
+  summarise(
+    quantidade = n()
+  )  %>%
+  ungroup() %>%
+   inner_join(
+     de_para_hierarquia %>%
+       rename(nome_nivel_hierarquia.y=nome_nivel_hierarquia,
+              entrada_abreviado = nome_abreviado)) %>%
+  arrange(quantidade) %>%
+  mutate(entrada = entrada_abreviado)
+
+ aluvial<-
+     dataset_analise %>%
+  filter(deslocamento==1,
+         nome_nivel_hierarquia.x == "Centro Local",
+         !(is.na(nome_nivel_hierarquia.y))) %>%
+  mutate(saída = nome_nivel_hierarquia.x,
+         entrada =nome_nivel_hierarquia.y ) %>%
+  select(saída, entrada) 
+ 
+
+ aluvial<- 
+   aluvial %>%
+   inner_join(
+     de_para_hierarquia %>%
+       rename(saída=nome_nivel_hierarquia,
+              saida_abreviado = nome_abreviado)) %>%
+   inner_join(
+     de_para_hierarquia %>%
+       rename(entrada=nome_nivel_hierarquia,
+              entrada_abreviado = nome_abreviado)) %>%
+   select(saida_abreviado, entrada_abreviado ) %>%
+   rename(saída= saida_abreviado,
+          entrada = entrada_abreviado)
+ 
+ aluvial$entrada <- factor(aluvial$entrada, levels = unique(ordem_y$entrada[order(ordem_y$quantidade)])) 
+
+
+ p<-
+ alluvial_wide( data = aluvial, 
+                max_variables = 2, 
+                fill_by = 'first_variable') 
+
+
+parcats::parcats(p, data_input = aluvial,marginal_histograms = FALSE,labelfont = list(size = 15, color = "black"), sortpaths= "backwards")
+```
+
+O primeiro fluxo representado na figura acima mostra que os pacientes de municípios categorizados como centros locais se deslocam principalmente, nesta ordem, para: centros sub-regionais B (17,4%), capitais regionais C (16,9%), centros sub-regionais A (15,6%) e só na quarta posição aparecem as metrópoles (13,3%). Com isso não resta dúvida que a hierarquia REGIC é de uma certa forma escalada quando se busca atendimento hospitalar. A metrópole possui atratividade para os centros locais, mas é moderada pela próximidade e capacidade de gestão de outros níveis urbanos.
+
+```{r fig.width=20, fig.height=10}
+
+ordem_y<- 
+dataset_analise %>%
+  filter(deslocamento==1,
+         nome_nivel_hierarquia.x %in% c("Capital Regional B","Capital Regional C", "Centro Sub-Regional B")) %>%
+  group_by(nome_nivel_hierarquia.y) %>%
+  summarise(
+    quantidade = n()
+  ) %>%
+  ungroup() %>%
+   inner_join(
+     de_para_hierarquia %>%
+       rename(nome_nivel_hierarquia.y=nome_nivel_hierarquia,
+              entrada_abreviado = nome_abreviado)) %>%
+  arrange(quantidade) %>%
+  mutate(entrada = entrada_abreviado)
+
+aluvial<-
+     dataset_analise %>%
+  filter(deslocamento==1,
+         nome_nivel_hierarquia.x %in% c("Capital Regional B","Capital Regional C", "Centro Sub-Regional B")) %>%
+  mutate(saida = nome_nivel_hierarquia.x,
+         entrada =nome_nivel_hierarquia.y ) %>%
+  select(saida, entrada) 
+
+ aluvial<- 
+   aluvial %>%
+   inner_join(
+     de_para_hierarquia %>%
+       rename(saida=nome_nivel_hierarquia,
+              saida_abreviado = nome_abreviado)) %>%
+   inner_join(
+     de_para_hierarquia %>%
+       rename(entrada=nome_nivel_hierarquia,
+              entrada_abreviado = nome_abreviado)) %>%
+   select(saida_abreviado, entrada_abreviado ) %>%
+   rename(saida= saida_abreviado,
+          entrada = entrada_abreviado)
+   
+aluvial$entrada <- factor(aluvial$entrada, levels = unique(ordem_y$entrada[order(ordem_y$quantidade)])) 
+  
+ p<- easyalluvial::alluvial_wide(aluvial)
+ 
+ parcats::parcats(p, data_input = aluvial,marginal_histograms = FALSE, sortpaths= "backward", labelfont = list(size = 15, color = "black"))
+```
+
+O gráfico acima mostra o resultado de um teste estatístico, chi-quadrado, que revelou que as metrópoles atraem de forma diferenciada os pacientes de municípios dos níveis centro sub-regionais B, capital regional C e capital regional B. É aqui que se revela a influência das metrópoles: a atração de pacientes de municípios posicionados em níveis intermediários da classificação REGIC.
+
+## Distâncias percorridas
+
+Ao colocarmos no mapa do Brasil as distâncias percorridas pelos pacientes em busca de atendimentos hospitalar podemos identificar padrões de atração e necessidade de deslocamentos. Vamos começar com um mapa que mostra os deslocamentos observados na amostra para o município de Paraupebas no interior do Pará. Escolhemos esse município pelos deslocamentos de saída com distâncias médias elevadas para o que normalmente se observa.
+
+```{r fig.width=20, fig.height=10, fig.dpi=500}
+
+muni_sel<- 
+  dataset_analise %>%
+  filter(deslocamento ==1,
+         munic_res==	"150553") %>%
+  group_by(munic_res,nome_nivel_hierarquia_ordenado.x, uf.x) %>%
+  summarise(quantidade = n()) %>%
+  rename(code_muni= munic_res,
+         hierarquia = nome_nivel_hierarquia_ordenado.x,
+         uf = uf.x) %>%
+  mutate(tipo_deslocamento  = "origem",
+         distancia = 0) %>%
+  bind_rows(
+      dataset_analise %>%
+  filter(deslocamento ==1,
+         munic_res==	"150553") %>%
+  group_by(codufmun,nome_nivel_hierarquia_ordenado.y, uf.y) %>%
+  summarise(
+    quantidade = n(),
+    distancia =min(distancia)
+  ) %>%
+  ungroup() %>%
+  rename(code_muni= codufmun,
+         hierarquia = nome_nivel_hierarquia_ordenado.y,
+         uf=uf.y)%>%
+  mutate(tipo_deslocamento  = "destino")
+  ) %>%
+  ungroup() 
+
+
+
+
+muni_sel_posicao<-
+   dataset_analise %>%
+  filter(deslocamento ==1,
+         munic_res==	"150553") %>%
+  distinct(munic_res, mun_res_lat.x, mun_res_lat.y, mun_res_lon.x, mun_res_lon.y,distancia)
+
+muni_sel_posicao<-
+  municipios_seat %>%
+  mutate(code_muni = str_sub(as.character(code_muni),1,6)) %>%
+  inner_join(
+    muni_sel_posicao %>%
+      rename(code_muni= munic_res)
+  ) 
+
+
+muni_sel_repel<-
+  municipios_seat %>%
+  mutate(code_muni = str_sub(as.character(code_muni),1,6)) %>%
+  filter(code_muni %in% c("150553","150140","150420"))
+
+  
+
+xmin<- min(min(muni_sel_posicao$mun_res_lon.x), min(muni_sel_posicao$mun_res_lon.y)) -1
+xmax <- max(max(muni_sel_posicao$mun_res_lon.x), max(muni_sel_posicao$mun_res_lon.y)) +1
+
+
+ymin<- min(min(muni_sel_posicao$mun_res_lat.x), min(muni_sel_posicao$mun_res_lat.y)) -1
+ymax <- max(max(muni_sel_posicao$mun_res_lat.x), max(muni_sel_posicao$mun_res_lat.y)) +1
+
+g1<-
+municipios_seat %>%
+  mutate(code_muni = str_sub(as.character(code_muni),1,6)) %>%
+  inner_join(
+    muni_sel
+  ) %>%
+  ggplot()+
+  geom_sf(data = estados_mapa, fill=NA, color="#505050")+
+  geom_curve(data=muni_sel_posicao, aes(x=mun_res_lon.x,y=mun_res_lat.x,xend=mun_res_lon.y,yend=mun_res_lat.y, colour= distancia),
+             curvature = -.25, ncp = 800,size = 1)+
+  geom_sf(fill="white",size=1.9,pch=21, color="#444444")+
+  scale_fill_discrete_qualitative(palette="dark2")+
+  scale_color_continuous_sequential(palette= "Heat 2")+
+  coord_sf(xlim = c(xmin,xmax), ylim=c(ymin,ymax))+
+  labs(
+    
+    color = str_wrap("distância em Km",10)
+  )+
+  theme_light() +
+  theme(
+    text = element_text(size=18),
+    panel.background = element_rect(fill = "black"),
+    panel.grid = element_blank(),
+    axis.title.x = element_blank(),
+    axis.title.y = element_blank(),
+    strip.background = element_rect(fill = "#505050"),
+    strip.text = element_text(color = "white"),
+    axis.text = element_blank(),
+
+  ) 
+
+muni_sel_foco<-
+  municipios_seat %>%
+  mutate(code_muni = str_sub(as.character(code_muni),1,6)) %>%
+  inner_join(
+      muni_sel%>%
+  filter(code_muni=="150553")
+  )
+
+
+
+muni_sel<-
+  muni_sel%>%
+  filter(code_muni!="150553")
+
+
+
+g2<-
+municipios_seat %>%
+  mutate(code_muni = str_sub(as.character(code_muni),1,6)) %>%
+  inner_join(
+    muni_sel
+  ) %>%
+  ggplot()+
+  geom_sf(data = estados_mapa, fill=NA, color="#505050")+
+  geom_sf( aes(fill=quantidade),pch=21, color="#444444", size=2.9)+
+  geom_sf( data= muni_sel_foco, aes(size=quantidade),pch=21, color="#444444", fill="white")+
+  geom_text_repel(data = muni_sel_repel,aes(x=X, y=Y, label= name_muni),fontface = "bold", color="white")+
+  scale_fill_continuous_sequential(palette= "Heat 2" )+
+  coord_sf(xlim = c(xmin,xmax), ylim=c(ymin,ymax))+
+  labs(
+    fill= str_wrap("Quantidade de entradas",15),
+    size= str_wrap("Quantidade de saídas",15)
+  )+
+  theme_light() +
+  theme(
+    text = element_text(size=18),
+    panel.background = element_rect(fill = "black"),
+    panel.grid = element_blank(),
+    axis.title.x = element_blank(),
+    axis.title.y = element_blank(),
+    strip.background = element_rect(fill = "#505050"),
+    strip.text = element_text(color = "white"),
+    axis.text = element_blank(),
+    legend.key = element_rect(fill = "black")
+
+  )
+
+
+g1|g2
+
+
+```
+
+Paraupebas é classificado como Centro sub-regional A. Com o percentual de saída de paciente em torno de 13% consegue atender a maior parte da demanda local. Ainda assim, 112 pacientes da amostra precisaram ser atendidos em outras cidades. Pelo mapa à esquerda observa-se que as distâncias para esse atendimento alcançaram 1250 km, com pacientes sendo atendidos em quatro regiões do Brasil: Norte, Nordeste, Sudeste e Centro-Oeste. Nota-se que a maior parte dos atendimentos, conforme a cor vermelha no mapa à direita, ocorre em Belém e Marabá, ambas cidades localizadas no Pará. Mesmo para esses municípios as distâncias não são pequenas. Marabá, uma capital regional C, fica a aproximadamente 100km, enquanto Belém, a metrópole do estado, está a 370km. Importante notar que essas distâncias foram calculadas usando a [fórmula de haversine](https://pt.wikipedia.org/wiki/F%C3%B3rmula_de_haversine) e não levam em conta as condições de meio de transporte disponíveis.
+
+Vamos ver agora como fica um exemplo de chegada de pacientes. A influência de um município pode ser claramente identificada por esses estudos espaciais que envolvem os mapas de distância e quantidade de pacientes atendidos vindos de outros municípios. Focaremos o caso de Recife, a cidade que mais atrai pacientes de outros centros urbanos.
+
+```{r fig.width=20, fig.height=10, fig.dpi=500}
+
+municipio_selecionado<-"261160"
+
+muni_sel<- 
+  dataset_analise %>%
+  filter(deslocamento ==1,
+         codufmun==	municipio_selecionado) %>%
+  group_by(codufmun,nome_nivel_hierarquia_ordenado.y, uf.y) %>%
+  summarise(quantidade = n()) %>%
+  rename(code_muni= codufmun,
+         hierarquia = nome_nivel_hierarquia_ordenado.y,
+         uf = uf.y) %>%
+  mutate(tipo_deslocamento  = "destino",
+         distancia = 0) %>%
+  bind_rows(
+    dataset_analise %>%
+      filter(deslocamento ==1,
+             codufmun==	municipio_selecionado) %>%
+      group_by(munic_res,nome_nivel_hierarquia_ordenado.x, uf.x) %>%
+      summarise(
+        quantidade = n(),
+        distancia =min(distancia)
+      ) %>%
+      ungroup() %>%
+      rename(code_muni= munic_res,
+             hierarquia = nome_nivel_hierarquia_ordenado.x,
+             uf=uf.x)%>%
+      mutate(tipo_deslocamento  = "origem")
+  )
+
+
+
+muni_sel_posicao<-
+dataset_analise %>%
+dplyr::filter(deslocamento ==1,
+        codufmun==	municipio_selecionado)%>%
+  distinct(codufmun, mun_res_lat.x, mun_res_lat.y, mun_res_lon.x, mun_res_lon.y,distancia)
+
+
+muni_sel_posicao<-
+  municipios_seat %>%
+  mutate(code_muni = str_sub(as.character(code_muni),1,6)) %>%
+  inner_join(
+    muni_sel_posicao %>%
+      rename(code_muni= codufmun)
+  )
+
+
+
+muni_sel_repel<-
+   municipios_seat %>%
+   mutate(code_muni = str_sub(as.character(code_muni),1,6)) %>%
+   filter(code_muni %in% c("260960", "260790","120020")) %>% #261160-Recife,260790 -Jaboatão, 260960 - Olinda, 260410 - Caruarau, 260545 - Fernando de Noronha, 120020 - Cruzeiro do Sul-AC
+  inner_join(muni_sel)
+  
+
+  
+
+xmin<- min(min(muni_sel_posicao$mun_res_lon.x), min(muni_sel_posicao$mun_res_lon.y)) -1
+xmax <- max(max(muni_sel_posicao$mun_res_lon.x), max(muni_sel_posicao$mun_res_lon.y)) +1
+
+
+ymin<- min(min(muni_sel_posicao$mun_res_lat.x), min(muni_sel_posicao$mun_res_lat.y)) -1
+ymax <- max(max(muni_sel_posicao$mun_res_lat.x), max(muni_sel_posicao$mun_res_lat.y)) +1
+
+g1<-
+municipios_seat %>%
+  mutate(code_muni = str_sub(as.character(code_muni),1,6)) %>%
+  inner_join(
+    muni_sel
+  ) %>%
+  ggplot()+
+  geom_sf(data = estados_mapa, fill=NA, color="#505050")+
+  geom_curve(data=muni_sel_posicao, aes(x=mun_res_lon.x,y=mun_res_lat.x,xend=mun_res_lon.y,yend=mun_res_lat.y, colour= distancia),
+             curvature = -.25, ncp = 800,size = 1)+
+  geom_sf(fill="white",size=1.9,pch=21, color="#444444")+
+  scale_fill_discrete_qualitative(palette="dark2")+
+  scale_color_continuous_sequential(palette= "Heat 2")+
+  coord_sf(xlim = c(xmin,xmax), ylim=c(ymin,ymax))+
+  labs(
+    fill= "",
+    color = str_wrap("distância em Km",10)
+  )+
+  theme_light() +
+  theme(
+    text = element_text(size=18),
+    panel.background = element_rect(fill = "black"),
+    panel.grid = element_blank(),
+    axis.title.x = element_blank(),
+    axis.title.y = element_blank(),
+    strip.background = element_rect(fill = "#505050"),
+    strip.text = element_text(color = "white"),
+    axis.text = element_blank(),
+
+  ) 
+
+muni_sel_foco<-
+  municipios_seat %>%
+  mutate(code_muni = str_sub(as.character(code_muni),1,6)) %>%
+  inner_join(
+      muni_sel%>%
+  filter(code_muni==municipio_selecionado)
+  )
+
+
+
+ muni_sel<-
+   muni_sel%>%
+   filter(code_muni!=municipio_selecionado)
+
+  
+set.seed(1972)
+
+g2<-
+municipios_seat %>%
+  mutate(code_muni = str_sub(as.character(code_muni),1,6)) %>%
+  inner_join(
+    muni_sel
+  ) %>%
+  ggplot()+
+  geom_sf(data = estados_mapa, fill=NA, color="#505050")+#505050
+  geom_sf( aes(fill=quantidade),pch=21, color="#444444", size=2, show.legend = TRUE)+
+  geom_sf( data= muni_sel_foco, aes(size=quantidade),pch=21, color="#444444", fill="white")+
+  geom_text_repel(data = muni_sel_repel,
+                  aes(x=X, y=Y, label= str_wrap(paste(name_muni,":",quantidade),10)), 
+                  color = "white", 
+                  limits = c(0,2352),
+                  fontface = "bold", 
+                  nudge_x = c(0,2,2.5), 
+                  nudge_y = c(0,-3.5,2),
+                  show.legend = TRUE)+
+  geom_text_repel(data = muni_sel_foco,
+                  aes(x=X, y=Y, label= str_wrap(name_muni,20)),
+                  fontface = "bold", 
+                  color="white",
+                  nudge_x = c(3), 
+                  nudge_y = c(0))+
+  scale_fill_continuous_sequential(palette= "Heat", trans= "log2" )+
+  coord_sf(xlim = c(xmin,xmax), ylim=c(ymin,ymax))+
+  labs(
+    
+    fill = str_wrap("Quantidade de saídas",15),
+    size= str_wrap("Quantidade de entradas",15)
+  )+
+  theme_light() +
+  theme(
+    text = element_text(size=18),
+    panel.background = element_rect(fill = "black"),
+    panel.grid = element_blank(),
+    axis.title.x = element_blank(),
+    axis.title.y = element_blank(),
+    strip.background = element_rect(fill = "#505050"),
+    strip.text = element_text(color = "white"),
+    axis.text = element_blank(),
+    legend.key = element_rect(fill = "#15202B")
+
+  )
+
+
+
+
+
+
+library(patchwork)
+
+g1|g2
+
+```
+
+A influência da metrópole Recife pode ser percebida em todo Brasil quando se trata de atendimento hospitalar. Observando no mapa à esquerda as distâncias haversianas nota-se que Recife atende pacientes que residem a mais de 3000km. A amostra indica que a capital pernambucana recebeu pacientes de quase todas as unidades federativas do país, com exceção de Mato grosso e Goiás. Por outro lado, ao se avaliar o mapa da direita, percebe-se que a maior influência ocorre sobre os municípios da região metropolitana, particularmente Olinda e Jaboatão dos Guararapes. É fácil perceber ainda que há uma extensão de pontos em tons vermelhos que se estende por todo o estado de Pernambuco. Também identifica-se a influência sobre estados vizinhos, notadamente Paraíba, Alagoas e Rio Grande do Norte.
+
+Essa influência do Recife era de uma certa forma esperada já que se trata de uma metrópole, porém, como já evidenciamos anteriormente, há situações de influências importantes associadas a municípios de hierarquias intermediárias. Vamos ver o caso de Barretos no interior de São Paulo.
+
+```{r fig.width=20, fig.height=10, fig.dpi=500}
+municipio_selecionado<-"350550"
+
+muni_sel<- 
+  dataset_analise %>%
+  filter(deslocamento ==1,
+         codufmun==	municipio_selecionado) %>%
+  group_by(codufmun,nome_nivel_hierarquia_ordenado.y, uf.y) %>%
+  summarise(quantidade = n()) %>%
+  rename(code_muni= codufmun,
+         hierarquia = nome_nivel_hierarquia_ordenado.y,
+         uf = uf.y) %>%
+  mutate(tipo_deslocamento  = "destino",
+         distancia = 0) %>%
+  bind_rows(
+    dataset_analise %>%
+      filter(deslocamento ==1,
+             codufmun==	municipio_selecionado) %>%
+      group_by(munic_res,nome_nivel_hierarquia_ordenado.x, uf.x) %>%
+      summarise(
+        quantidade = n(),
+        distancia =min(distancia)
+      ) %>%
+      ungroup() %>%
+      rename(code_muni= munic_res,
+             hierarquia = nome_nivel_hierarquia_ordenado.x,
+             uf=uf.x)%>%
+      mutate(tipo_deslocamento  = "origem")
+  )
+
+
+
+muni_sel_posicao<-
+dataset_analise %>%
+dplyr::filter(deslocamento ==1,
+        codufmun==	municipio_selecionado)%>%
+  distinct(codufmun, mun_res_lat.x, mun_res_lat.y, mun_res_lon.x, mun_res_lon.y,distancia)
+
+
+muni_sel_posicao<-
+  municipios_seat %>%
+  mutate(code_muni = str_sub(as.character(code_muni),1,6)) %>%
+  inner_join(
+    muni_sel_posicao %>%
+      rename(code_muni= codufmun)
+  )
+
+
+
+muni_sel_repel<-
+   municipios_seat %>%
+   mutate(code_muni = str_sub(as.character(code_muni),1,6)) %>%
+   filter(code_muni %in% c("350610", "351740","140010")) %>%
+  inner_join(muni_sel)
+  
+
+  
+
+xmin<- min(min(muni_sel_posicao$mun_res_lon.x), min(muni_sel_posicao$mun_res_lon.y)) -1
+xmax <- max(max(muni_sel_posicao$mun_res_lon.x), max(muni_sel_posicao$mun_res_lon.y)) +1
+
+
+ymin<- min(min(muni_sel_posicao$mun_res_lat.x), min(muni_sel_posicao$mun_res_lat.y)) -1
+ymax <- max(max(muni_sel_posicao$mun_res_lat.x), max(muni_sel_posicao$mun_res_lat.y)) +1
+
+g1<-
+municipios_seat %>%
+  mutate(code_muni = str_sub(as.character(code_muni),1,6)) %>%
+  inner_join(
+    muni_sel
+  ) %>%
+  ggplot()+
+  geom_sf(data = estados_mapa, fill=NA, color="#505050")+
+  geom_curve(data=muni_sel_posicao, aes(x=mun_res_lon.x,y=mun_res_lat.x,xend=mun_res_lon.y,yend=mun_res_lat.y, colour= distancia),
+             curvature = -.25, ncp = 800,size = 1)+
+  geom_sf(fill="white",size=1.9,pch=21, color="#444444")+
+  scale_fill_discrete_qualitative(palette="dark2")+
+  scale_color_continuous_sequential(palette= "Heat 2")+
+  coord_sf(xlim = c(xmin,xmax), ylim=c(ymin,ymax))+
+  labs(
+    fill= "",
+    color = str_wrap("distância em Km",10)
+  )+
+  theme_light() +
+  theme(
+    text = element_text(size=18),
+    panel.background = element_rect(fill = "black"),
+    panel.grid = element_blank(),
+    axis.title.x = element_blank(),
+    axis.title.y = element_blank(),
+    strip.background = element_rect(fill = "#505050"),
+    strip.text = element_text(color = "white"),
+    axis.text = element_blank(),
+
+  ) 
+
+muni_sel_foco<-
+  municipios_seat %>%
+  mutate(code_muni = str_sub(as.character(code_muni),1,6)) %>%
+  inner_join(
+      muni_sel%>%
+  filter(code_muni==municipio_selecionado)
+  )
+
+
+
+ muni_sel<-
+   muni_sel%>%
+   filter(code_muni!=municipio_selecionado)
+
+  
+set.seed(1972)
+
+g2<-
+municipios_seat %>%
+  mutate(code_muni = str_sub(as.character(code_muni),1,6)) %>%
+  inner_join(
+    muni_sel
+  ) %>%
+  ggplot()+
+  geom_sf(data = estados_mapa, fill=NA, color="#505050")+#505050
+  geom_sf( aes(fill=quantidade),pch=21, color="#444444", size=2, show.legend = TRUE)+
+  geom_sf( data= muni_sel_foco, aes(size=quantidade),pch=21, color="#444444", fill="white")+
+  geom_text_repel(data = muni_sel_repel,
+                  aes(x=X, y=Y, label= str_wrap(paste(name_muni,":",quantidade),10)),
+                  color = "white",
+                  segment.size = 1,
+                  limits = c(0,2352),
+                  fontface = "bold",
+                  nudge_x = c(-15,2,-5),
+                  nudge_y = c(0,-5.5,0),
+                  show.legend = TRUE)+
+  geom_text_repel(data = muni_sel_foco,
+                  aes(x=X, y=Y, label= str_wrap(name_muni,20)),
+                  fontface = "bold",
+                  color="white",
+                  segment.size = 1,
+                  nudge_x = c(6),
+                  nudge_y = c(0))+
+  scale_fill_continuous_sequential(palette= "Heat", trans= "log2" )+
+  coord_sf(xlim = c(xmin,xmax), ylim=c(ymin,ymax))+
+  labs(
+    
+    fill = str_wrap("Quantidade de saídas",15),
+    size= str_wrap("Quantidade de entradas",15)
+  )+
+  theme_light() +
+  theme(
+    text = element_text(size=18),
+    panel.background = element_rect(fill = "black"),
+    panel.grid = element_blank(),
+    axis.title.x = element_blank(),
+    axis.title.y = element_blank(),
+    strip.background = element_rect(fill = "#505050"),
+    strip.text = element_text(color = "white"),
+    axis.text = element_blank(),
+    legend.key = element_rect(fill = "#15202B")
+
+  )
+
+
+
+
+
+
+library(patchwork)
+
+g1|g2
+```
+
+Barretos é uma capital regional C. Observa-se no mapa que esse nível intermediário de influência não impediu de alcançar pacientes que residem a mais de 2000 km de distância. Mesmo o número absoluto de pacientes vindos de outras localidades sendo bem inferior a Recife, ainda assim a amostra trabalhada indicou que a influência da cidade só não atingiu os estados do Rio Grande do Norte e Paraíba. E aqui novamente se revela a concentração de atendimentos em cidades mais próximas, principalmente nos estados de São Paulo, Minas Gerais e Goiás.
+
+## Chegadas, partidas e as relações com gastos Hospitalares e Ambulatoriais
+
+Ao chegarmos nesse ponto do texto já identificamos diversos aspectos importantes sobre os fenômenos de deslocamentos de pacientes e as suas relações com o tipo de cidade em que essas pessoas habitam. Agora precisamos voltar à pergunta original que motivou esse trabalho e buscar entender quais são as associações entre gastos municipais com hospitais e os deslocamentos de pacientes.
+
+Na análise, utilizamos uma técnica chamada [agrupamento](https://pt.wikipedia.org/wiki/Clustering). Para o nosso caso buscamos agrupar os municípios com valores parecidos nas duas dimensões já analisadas anteriormente: percentual de saída de paciente e percentual de atendimentos de pacientes de outros municípios. Usando algumas recomendações para definição do número de agrupamentos, nos definimos por quatro tipos de conjuntos distintos de municípios:
+
+-   Entrada moderada: formado por 702 municípios. [Ituporanga-SC](https://cidades.ibge.gov.br/brasil/sc/ituporanga/panorama) é o município que ocupa a posição central do agrupamento[^3]. Seu percentual de atendimentos de paciente de outros municípios é 45% e percentual de saída de pacientes é 29,1%.
+-   Saída fraca: formado por 1017 municípios. O município de [Três Marias-MG](https://cidades.ibge.gov.br/brasil/mg/tres-marias/panorama) é o que melhor caracteriza esse grupo. O percentual de saída é 31% e o de entrada é 7%.
+-   Saída moderada: para esses casos encontramos 1051 municípios. Aqui temos como ponto central a cidade de [São Luiz-RR](https://cidades.ibge.gov.br/brasil/rr/sao-luiz/panorama) com saída de 65,8% dos pacientes e entrada de 6,7%
+-   Saída forte: é o maior grupo, formado por 2799 municípios. A localidade [Vila Propício-GO](https://cidades.ibge.gov.br/brasil/go/vila-propicio/panorama) representa o grupo com 100% de saída de pacientes e 0% de chegada.
+
+[^3]: O agrupamento foi baseado na abordagem k-medoids onde se identifica um ponto no grupo que represeta uma distância central considerando as variáveis utilizadas para a formação dos grupos. No caso: % de entrada e % de saída. Para conhecer um pouco mais sobre k-medoids recomendamos a leitura desse [artigo](https://en.wikipedia.org/wiki/K-medoids) na wikipedia.
+
+O proximo passo foi identificar como os percentuais de gastos em hospitais se associam a cada um dos grupos[^4]. A figura logo abaixo nos permite identificar algumas conclusões.
+
+[^4]: Tal como os dados sobre gastos informados logo na primeira seção do texto, aqui também utilizamos as informações vindas do SICONFI. A diferença é que para esse caso usamos uma [biblioteca em R](https://github.com/tchiluanda/siconfiBD) desenvolvida pela STN que facilita o consumo automatizado dos dados anuais de municípios.
+
+```{r fig.width=20, fig.height=10, fig.dpi=500}
+agrupamento_municipio_cluster<-readRDS("agrupamento_municipio_2020.RDS")
+
+g1<-
+dataset_analise %>%
+  filter(deslocamento == 1,
+         perc.x>0,
+         perc.x<=50) %>% 
+  distinct(nome_nivel_hierarquia.x,munic_res, perc.x) %>%
+  inner_join(
+    agrupamento_municipio_cluster %>%
+      rename(munic_res=code_muni)
+  ) %>%
+  ggplot() +
+  geom_jitter(aes(x=cluster_4_k, y=perc.x, fill=perc_saida), pch=21, color="#444444",size=2)+
+  geom_boxplot(aes(x=cluster_4_k, y=perc.x),fill=NA, color= "white", outlier.shape = NA)+
+  scale_fill_continuous_sequential(palette= "Red-Yellow")+
+  theme_light() +
+  theme(
+    text = element_text(size=18),
+    panel.background = element_rect(fill = "black"),
+    panel.grid = element_blank(),
+    axis.title.x = element_blank(),
+    strip.background = element_rect(fill = "#505050"),
+    strip.text = element_text(color = "white"),
+    #axis.text = element_blank(),
+    axis.text.x = element_text(angle = 45, vjust = 0.5),
+    legend.key = element_rect(fill = "#15202B")
+
+  )+
+  labs(
+    fill= "(%) saída",
+    y = "Gastos Hospitalares e ambulatoriais - (%) do total"
+  )
+
+
+g2<-
+dataset_analise %>%
+  filter(deslocamento == 1,
+         perc.y>0,
+         perc.y<=50) %>%
+  distinct(nome_nivel_hierarquia.y,codufmun, perc.y) %>%
+  inner_join(
+    agrupamento_municipio_cluster %>%
+      rename(codufmun=code_muni)
+  ) %>%
+  ggplot() +
+  geom_jitter(aes(x=cluster_4_k, y=perc.y, fill=perc_entrada), pch=21, color="#444444",size=2)+
+  geom_boxplot(aes(x=cluster_4_k, y=perc.y),fill=NA, color= "white", outlier.shape = NA)+
+  scale_fill_continuous_sequential(palette= "Red-Yellow")+
+  theme_light() +
+  theme(
+    text = element_text(size=18),
+    panel.background = element_rect(fill = "black"),
+    panel.grid = element_blank(),
+    axis.title.x = element_blank(),
+    strip.background = element_rect(fill = "#505050"),
+    strip.text = element_text(color = "white"),
+    axis.text.x = element_text(angle = 45, vjust = 0.5),
+    legend.key = element_rect(fill = "#15202B")
+
+  )+
+  labs(
+    fill= "(%) entrada",
+    y = "Gastos Hospitalares e ambulatoriais - (%) do total"
+  )
+
+g1|g2
+
+```
+
+Cada ponto colorido dos gráficos é um município brasileiro. As cores dos pontos representam o percentual de saída de pacientes, para o gráfico esquerdo, e o percentual de atendimentos de pacientes de outras cidades, para o gráfico direito. No eixo horizontal dos dois gráficos vemos os grupos e no eixo vertical o percentual de gastos com atendimento hospitalar e ambulatorial. Os quadrados que aparecem nos gráficos são conhecidos como box-plot. A principal função do box-plot é identificar o intervalo onde ficam 75% dos valores intermediários da dimensão que queremos analisar. Esse intervalo é dado pela área entre a primeira e a terceira retas horizontais do quadrado. A reta horizontal do meio representa a mediana. Em outras palavras, para o caso em análise, 50% dos municípios apresentam proporções de gastos com atendimento hospitalar e ambulatorial menores do que o valor assinalado pela reta da mediana em cada um dos box-plots representados.
+
+Feita a apresentação dos gráficos fica fácil perceber a conclusão mais importante da associação entre gastos e grupos de entrada e saída de pacientes: quando se analisa as saídas de pacientes, no gráfico à esquerda, descobrimos que o grupo **saída forte** apresenta mediana de gastos proporcionais com hospitais muito inferior aos demais grupos. Além disso, o grupo **entrada moderada** apresenta a mediana destacadamente superior aos demais grupos.
+
+O gráfico do lado direito traz sinais contraditórios. Os grupos **entrada moderada** e **saída forte** apresentam medianas parecidas e maiores do que as dos outros dois grupos. Nesse caso não é possível chegar-se a conclusões sobre o impacto da despesa com hospitais e atração de pacientes.
+
+Observando o quadro geral dos dois gráficos e contrastando com nossa inquietação de pesquisa inicial, podemos concluir que há uma forte associação inversa entre proporções de gastos com hospitais e necessidade de deslocamento de pacientes para outros municípios.
+
+É possível repetir essa análise com cortes pelos níveis do REGIC. Veja a imagem abaixo.
+
+```{r fig.width=20, fig.height=10, fig.dpi=500}
+dataset_analise %>%
+  filter(deslocamento == 1,
+         perc.x>0,
+         perc.x<=50,
+         !is.na(nome_nivel_hierarquia.x)) %>% #filtro para tirar os outliers
+  distinct(nome_nivel_hierarquia_ordenado.x,munic_res, perc.x) %>%
+  inner_join(
+    agrupamento_municipio_cluster %>%
+      rename(munic_res=code_muni) 
+  ) %>%
+  mutate(tipo_analise = "Saída",
+         hierarquia=nome_nivel_hierarquia_ordenado.x,
+         percentual = perc.x) %>%
+  bind_rows(
+    dataset_analise %>%
+      filter(deslocamento == 1,
+             perc.y>0,
+             perc.y<=50,
+             !is.na(nome_nivel_hierarquia.y)) %>% #filtro para tirar os outliers
+      distinct(nome_nivel_hierarquia_ordenado.y,codufmun, perc.y) %>%
+      inner_join(
+        agrupamento_municipio_cluster %>%
+          rename(codufmun=code_muni) 
+      ) %>%
+      mutate(tipo_analise = "Entrada",
+             hierarquia=nome_nivel_hierarquia_ordenado.y,
+             percentual = perc.y)
+  )%>%
+  ggplot() +
+  geom_jitter(aes(x=hierarquia, y=percentual, fill=cluster_4_k), pch=21, color="#444444",size=2)+
+  geom_boxplot(aes(x=hierarquia, y=percentual),fill=NA, color= "white", outlier.shape = NA)+
+  scale_fill_discrete_divergingx(palette= "Zissou 1")+
+  theme_light() +
+  theme(
+    text = element_text(size=18),
+    panel.background = element_rect(fill = "black"),
+    panel.grid = element_blank(),
+    axis.title.x = element_blank(),
+    strip.background = element_rect(fill = "#505050"),
+    strip.text = element_text(color = "white"),
+    axis.text.x = element_text(angle = 45, vjust = 0.5),
+
+  )+
+  labs(
+    fill= str_wrap("Tipo agrupamento",15),
+    y = "Gastos Hospitalares e ambulatoriais - (%) do total"
+  )+
+  facet_grid(tipo_analise~.)
+```
+
+Novamente temos dois gráficos com pontos e box-plot. A diferença é que no eixo horizontal estão apresentados os níveis REGIC e as cores mostram quais a quais grupos os municípios estão associados, conforme pode ser lido na legenda.
+
+Mais uma vez a análise mais importante é sobre o gráfico que mostra as saídas de pacientes. Nesse caso vemos uma forte associação dos centros locais com a cor do grupo **saída forte.** A outra observação**,** ainda mais importante para o nosso trabalho, é a percepção de que a mediana do nível hierárquico mais inferior do REGIC é bem menor que a dos demais níveis. Com isso podemos concluir que os centros locais são fortemente associados a baixos gastos proporcionais com atendimento hospitalar. Podemos notar ainda que os outros grupos, com exceção do Centro de Zona B, predominam municípios dos grupos **entrada forte** e **saída fraca**.
+
+Recuperando os achados anteriores dos fluxos entre níveis hierárquicos do REGIC, podemos concluir que os deslocamentos de pacientes predominam em cidades que se caracterizam por baixa autonomia e baixos gastos proporcionais em hospitais. O destino desses pacientes são outras cidades com mais possibilidades de atendimento derivados de maiores gastos em infraestruturas de saúde e que apresentam melhores estruturas de gestão.
+
+### Para finalizar
+
+Vimos que o REGIC é um bom preditor dos deslocamentos de pacientes entre municípios de diferentes níveis, tanto para a saída como para a chegada de pacientes. Percebemos também que os níveis superiores da hierarquia estão associados a forte autonomia hospitalar. Não foi difiícil perceber que esses fenômenos levam muitas vezes a deslocamentos de centenas ou milhares de quilômetros para os pacientes e seus familiares.
+
+Já no final do texto percebemos que os gastos hospitalares estão associados inversamente a um grande percentual de atendimentos fora dos municípios de residência e isso se reflete na hierarquia REGIC onde percebemos que os centros locais no geral gastam bem menos que os outros municípios.
+
+É preciso dizer, porém, que há motivações para que esse tipo de desenho ocorra. Talvez não necessariamente de forma tão acentuada. A organização do SUS prevê **regiões de saúde** formadas por agrupamentos de municípios. Esse tipo de arranjo tem entre outros objetivos a busca da racionalização dos gastos, otimização de recursos e eficiência na rede de atenção[^5]. Essa caracterização do SUS prevê fluxos de pacientes e pode influenciar a decisão alocativa de orçamento municipal. O nosso trabalho não tem a intenção de mostrar as redes de causalidade que geram o quadro aqui apresentado. Acreditamos que essa é uma tarefa para equipes mais especializadas sobre o tema de saúde pública[^6]. Em todo caso deixamos aqui nossas análises, com códigos e dados abertos [^7], de forma que possam ser úteis para futuros trabalhos onde outros aspectos do atendimento hospitalar sejam investigados
+
+[^5]: Para conhecer mais sobre as diretrizes gerais sobre regiões de saúde, leia a [resolução Nº 1, de 29 de setembro de 2011](https://bvsms.saude.gov.br/bvs/saudelegis/cit/2011/res0001_29_09_2011.html) do Ministério da Sáude.
+
+[^6]: Para conhecer mais sobre o fenômeno da evasão de pacientes para fora de suas regiões de saúde recomendamos a leitura de Rocha, R., Rache, R. e L. Nunes (2022). A Regionalização da Saúde no Brasil. Estudo Institucional n.7. São Paulo: Instituto de Estudos para Políticas de Saúde
+
+[^7]: Os códigos utilizados, incluindo os processos de captura dos dados das fontes primárias estão disponíveis no [github](https://github.com/tchiluanda/siconfi_atendimento_hospitalar).
+
+### Um pouco sobre o painel
+
+Provavelmente você está lendo esse texto a partir de um painel produzido pela Secretaria do Tesouro Nacional. Além desse material, o painel conta com páginas que permitem localizar os municípios dentro dos quadros analíticos explorados ao longo do texto. É possível também que, com a evolução das sugestões de usuários, novas páginas sejam acrescentadas sem necessariamente haver análises feitas pela equipe da STN. Convidamos o leitor a navegar por entre as abas disponibilizadas, fazer filtros, baixar dados e capturar gráficos para outras ressignficações dos dados sobre atendimentos hospitalares no Brasil e suas relações com execuções orçamentárias municipais.
+
+### Agradecimentos
+
+A equipe que produziu esse trabalho agradece a colaboração especial da epidemiologista [Beatriz Jardim](https://www.linkedin.com/in/beatrizjardim/) que identificou pontos importantes para as nossas análises e nos explicou como funcionam as áreas de saúde do SUS.
