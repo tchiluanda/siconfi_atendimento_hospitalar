@@ -58,9 +58,9 @@ library(easyalluvial)
 
 
 ###Dados
-dataset_analise <- readRDS("dataset_analise_2020.RDS")
+dataset_analise <- readRDS("dataset_analise_2021.RDS")
 
-agrupamento_municipio_cluster<-readRDS("agrupamento_municipio_2020.RDS")
+agrupamento_municipio_cluster<-readRDS("agrupamento_municipio_2021.RDS")
 
 load("dados_auxiliares.RData")
 
@@ -1341,7 +1341,7 @@ dataset_analise %>%
     
 
   selecao %>%
-    select(-liquido) %>%
+    select(-c(liquido,id_agrupamento)) %>%
     arrange(mun_res_nome.x) %>%
   datatable(
             colnames = c("Código Município",

@@ -67,11 +67,11 @@ library(colorspace)
 library(patchwork)
 library(easyalluvial)
 
-dataset_analise <- readRDS("~/Github/siconfi_atendimento_hospitalar/dataset_analise_2021.RDS")
+dataset_analise <- readRDS("dataset_analise_2021.RDS")
 
 
 
-load("~/Github/siconfi_atendimento_hospitalar/dados_auxiliares_2021.RData")
+load("dados_auxiliares_2021.RData")
 
 mun_sel_nivel_1A<- 
   municipios_seat %>%
@@ -111,7 +111,7 @@ de_para_hierarquia <- read_delim("de_para_hierarquia.csv",
 
 ```
 
-Nos próximos gráficos e parágrafos vamos mostrar que o atendimento hospitalar no Brasil requer com muita frequência deslocamentos dos pacientes para cidades diferentes das suas residências. Para sermos mais precisos, em torno de 3,6 milhões de deslocamentos desse tipo somente no ano de 2020. Na maioria das vezes essas viagens não ultrapassam as cidades mais próximas, porém, em muitas situações, alcançam os milhares de quilômetros.
+Nos próximos gráficos e parágrafos vamos mostrar que o atendimento hospitalar no Brasil requer com muita frequência deslocamentos dos pacientes para cidades diferentes das suas residências. Para sermos mais precisos, em torno de 4,0 milhões de deslocamentos desse tipo somente no ano de 2021. Na maioria das vezes essas viagens não ultrapassam as cidades mais próximas, porém, em muitas situações, alcançam os milhares de quilômetros.
 
 Essa constatação é decorrente de uma investigação que se originou a partir dos dados sobre gastos em atendimento hospitalar e ambulatorial. A partir deles, é possível detectar uma imensa desigualdade entre os municípios brasileiros: a grande maioria das localidades de pequeno porte com gastos bastante inferiores às de médio e grande porte. Essa observação, por sua vez, nos levou a questionar se a desigualdade de gastos geraria fluxos significativos de pacientes entre cidades com baixa capacidade hospitalar para aquelas com maiores disponibildiades de infra-estrutura de atendimento.
 
@@ -315,7 +315,7 @@ Observe na primeira figura que a cor amarela relativa à **assistência hospital
 
 ## Deslocamentos hospitalares e Regiões de Influência
 
-Para começar a nossa análise vamos mostrar como uma amostra aleatória de mais de 1 milhão de internações hospitalares ocorridas em 2020 em todo o Brasil se divide entre atendimentos locais e com deslocamentos. [^2].
+Para começar a nossa análise vamos mostrar como uma amostra aleatória de mais de 1 milhão de internações hospitalares ocorridas em 2021 em todo o Brasil se divide entre atendimentos locais e com deslocamentos. [^2].
 
 [^2]: os dados de internações são extraídos do Sistema de Internações hospitalares do SUS. Para o caso específico desse trabalho usamos o pacote [{microdatasus}](https://github.com/rfsaldanha/microdatasus) desenvolvido por Saldanha et al (2019)
 
@@ -340,7 +340,7 @@ dataset_analise %>%
 
 ```
 
-Observa-se no gráfico que os atendimentos locais, ou seja feitos na própria cidade do paciente, são bem mais numerosos do que os que exigem deslocamento. No entanto, ainda assim, a amostra revela mais de 360 mil procedimentos hospitalares que levaram os pacientes a se locomoverem de cidade. Considerando que essa é uma amostra de 10% do total de internações realizadas em 2020, não é difícil extrapolar que aproximadamente 3,6 milhões de atendimentos foram realizados fora das cidades de residência dos pacientes. Somente a título de comparação demográfica, a população do Uruguai foi estimada em [3,5 milhões de habitantes](https://datosmacro.expansion.com/paises/uruguay) em 2020.
+Observa-se no gráfico que os atendimentos locais, ou seja feitos na própria cidade do paciente, são bem mais numerosos do que os que exigem deslocamento. No entanto, ainda assim, a amostra revela quase 400 mil procedimentos hospitalares que levaram os pacientes a se locomoverem de cidade. Considerando que essa é uma amostra de 10% do total de internações realizadas em 2021, não é difícil extrapolar que aproximadamente 4,0 milhões de atendimentos foram realizados fora das cidades de residência dos pacientes. Somente a título de comparação demográfica, a população do Uruguai foi estimada em [3,5 milhões de habitantes](https://datosmacro.expansion.com/paises/uruguay) em 2020.
 
 A figura logo abaixo mostra os rankings que são elaborados a partir da amostra. São três gráficos: as cidades que mais tiveram pacientes se deslocando para outros municípios; aquelas que mais receberam pacientes de fora; e as cidades com maior número de atendimentos locais.
 
@@ -461,8 +461,6 @@ factor(REGIC_trabalho$nome_nivel_hierarquia, levels = unique(REGIC_trabalho$nome
 municipios_seat<- cbind(municipios_seat, st_coordinates(st_centroid(municipios_seat)))
 
 
-
-
 municipios_seat %>%
   inner_join(
     REGIC_trabalho %>%
@@ -531,7 +529,7 @@ Para a nossa análise, apesar de usarmos o REGIC como referência, utilizamos os
 
 ## As regiões de influência: entradas e saídas
 
-Como as regiões de influência se associam aos fluxos de pacientes? Existem diversas formas de se responder essa pergunta. Vamos começar mostrando três gráficos: o primeiro evidencia o número de internações para cada grupo hierárquico; o segundo indica como a demanda dos pacientes é atendida de acordo com o local de internação: hospitais locais ou outros municípios. Por fim, o terceiro gráfico revela a origem dos pacientes nos atendimentos hospitalares: pacientes locais ou pacientes vindos de outros municípios. Sempre bom lembrar que os dados trabalhados nessa análise referem-se a uma amostra do total de internações ocorridas no Brasil em 2020.
+Como as regiões de influência se associam aos fluxos de pacientes? Existem diversas formas de se responder essa pergunta. Vamos começar mostrando três gráficos: o primeiro evidencia o número de internações para cada grupo hierárquico; o segundo indica como a demanda dos pacientes é atendida de acordo com o local de internação: hospitais locais ou outros municípios. Por fim, o terceiro gráfico revela a origem dos pacientes nos atendimentos hospitalares: pacientes locais ou pacientes vindos de outros municípios. Sempre bom lembrar que os dados trabalhados nessa análise referem-se a uma amostra do total de internações ocorridas no Brasil em 2021.
 
 ```{r fig.width=8, fig.height=8}
 
@@ -860,7 +858,7 @@ dataset_analise %>%
 parcats::parcats(p, data_input = aluvial,marginal_histograms = FALSE,labelfont = list(size = 15, color = "black"), sortpaths= "backwards")
 ```
 
-O primeiro fluxo representado na figura acima mostra que os pacientes de municípios categorizados como centros locais se deslocam principalmente, nesta ordem, para: centros sub-regionais B (17,4%), capitais regionais C (16,9%), centros sub-regionais A (15,6%) e só na quarta posição aparecem as metrópoles (13,3%). Com isso não resta dúvida que a hierarquia REGIC é de uma certa forma escalada quando se busca atendimento hospitalar. A metrópole possui atratividade para os centros locais, mas é moderada pela próximidade e capacidade de gestão de outros níveis urbanos.
+O primeiro fluxo representado na figura acima mostra que os pacientes de municípios categorizados como centros locais se deslocam principalmente, nesta ordem, para: centros sub-regionais B (17,6%), capitais regionais C (16,6%), centros sub-regionais A (15,7%) e só na quarta posição aparecem as metrópoles (13,8%). Com isso não resta dúvida que a hierarquia REGIC é de uma certa forma escalada quando se busca atendimento hospitalar. A metrópole possui atratividade para os centros locais, mas é moderada pela próximidade e capacidade de gestão de outros níveis urbanos.
 
 ```{r fig.width=20, fig.height=10}
 
@@ -1235,7 +1233,7 @@ g1|g2
 
 ```
 
-A influência da metrópole Recife pode ser percebida em todo Brasil quando se trata de atendimento hospitalar. Observando no mapa à esquerda as distâncias haversianas nota-se que Recife atende pacientes que residem a mais de 3000km. A amostra indica que a capital pernambucana recebeu pacientes de quase todas as unidades federativas do país, com exceção de Mato grosso e Goiás. Por outro lado, ao se avaliar o mapa da direita, percebe-se que a maior influência ocorre sobre os municípios da região metropolitana, particularmente Olinda e Jaboatão dos Guararapes. É fácil perceber ainda que há uma extensão de pontos em tons vermelhos que se estende por todo o estado de Pernambuco. Também identifica-se a influência sobre estados vizinhos, notadamente Paraíba, Alagoas e Rio Grande do Norte.
+A influência da metrópole Recife pode ser percebida em todo Brasil quando se trata de atendimento hospitalar. Observando no mapa à esquerda as distâncias haversianas nota-se que Recife atende pacientes que residem a mais de 4000km. A amostra indica que a capital pernambucana recebeu pacientes de quase todas as unidades federativas do país. Por outro lado, ao se avaliar o mapa da direita, percebe-se que a maior influência ocorre sobre os municípios da região metropolitana, particularmente Olinda e Jaboatão dos Guararapes. É fácil perceber ainda que há uma extensão de pontos em tons vermelhos que se estende por todo o estado de Pernambuco. Também identifica-se a influência sobre estados vizinhos, notadamente Paraíba, Alagoas e Rio Grande do Norte.
 
 Essa influência do Recife era de uma certa forma esperada já que se trata de uma metrópole, porém, como já evidenciamos anteriormente, há situações de influências importantes associadas a municípios de hierarquias intermediárias. Vamos ver o caso de Barretos no interior de São Paulo.
 
@@ -1409,7 +1407,7 @@ library(patchwork)
 g1|g2
 ```
 
-Barretos é uma capital regional C. Observa-se no mapa que esse nível intermediário de influência não impediu de alcançar pacientes que residem a mais de 2000 km de distância. Mesmo o número absoluto de pacientes vindos de outras localidades sendo bem inferior a Recife, ainda assim a amostra trabalhada indicou que a influência da cidade só não atingiu os estados do Rio Grande do Norte e Paraíba. E aqui novamente se revela a concentração de atendimentos em cidades mais próximas, principalmente nos estados de São Paulo, Minas Gerais e Goiás.
+Barretos é uma capital regional C. Observa-se no mapa que esse nível intermediário de influência não impediu de alcançar pacientes que residem a mais de 2000 km de distância. Mesmo o número absoluto de pacientes vindos de outras localidades sendo bem inferior a Recife, ainda assim a amostra trabalhada indicou que a influência da cidade atingiu todos os Estados do Brasil. E aqui novamente se revela a concentração de atendimentos em cidades mais próximas, principalmente nos estados de São Paulo, Minas Gerais e Goiás.
 
 ## Chegadas, partidas e as relações com gastos Hospitalares e Ambulatoriais
 
@@ -1417,10 +1415,13 @@ Ao chegarmos nesse ponto do texto já identificamos diversos aspectos importante
 
 Na análise, utilizamos uma técnica chamada [agrupamento](https://pt.wikipedia.org/wiki/Clustering). Para o nosso caso buscamos agrupar os municípios com valores parecidos nas duas dimensões já analisadas anteriormente: percentual de saída de paciente e percentual de atendimentos de pacientes de outros municípios. Usando algumas recomendações para definição do número de agrupamentos, nos definimos por quatro tipos de conjuntos distintos de municípios:
 
--   Entrada moderada: formado por 702 municípios. [Ituporanga-SC](https://cidades.ibge.gov.br/brasil/sc/ituporanga/panorama) é o município que ocupa a posição central do agrupamento[^3]. Seu percentual de atendimentos de paciente de outros municípios é 45% e percentual de saída de pacientes é 29,1%.
--   Saída fraca: formado por 1017 municípios. O município de [Três Marias-MG](https://cidades.ibge.gov.br/brasil/mg/tres-marias/panorama) é o que melhor caracteriza esse grupo. O percentual de saída é 31% e o de entrada é 7%.
--   Saída moderada: para esses casos encontramos 1051 municípios. Aqui temos como ponto central a cidade de [São Luiz-RR](https://cidades.ibge.gov.br/brasil/rr/sao-luiz/panorama) com saída de 65,8% dos pacientes e entrada de 6,7%
--   Saída forte: é o maior grupo, formado por 2799 municípios. A localidade [Vila Propício-GO](https://cidades.ibge.gov.br/brasil/go/vila-propicio/panorama) representa o grupo com 100% de saída de pacientes e 0% de chegada.
+-   Entrada moderada: formado por 700 municípios. O município de [Guaçuí-ES](https://cidades.ibge.gov.br/brasil/es/guacui/panorama)  é o município que ocupa a posição central do agrupamento[^3]. Seu percentual de atendimentos de paciente de outros municípios é 45,9% e percentual de saída de pacientes é 30,3.
+
+-   Saída fraca: formado por 1020 municípios,  [São Bento-MA](https://cidades.ibge.gov.br/brasil/ma/sao-bento/panorama)  é o que melhor caracteriza esse grupo. Para essa cidade, O percentual de saída é 34,4% e o de entrada é 6,2%.
+
+-   Saída moderada: para esses casos encontramos 1075 municípios. Aqui temos como ponto central a cidade de [Nova Ipixuna-PA](https://cidades.ibge.gov.br/brasil/pa/nova-ipixuna/panorama) com saída de 64,2% dos pacientes e entrada de 4,0%
+
+-   Saída forte: é o maior grupo, formado por 2775 municípios. A localidade [Vila Propício-GO](https://cidades.ibge.gov.br/brasil/go/vila-propicio/panorama) representa o grupo com 100% de saída de pacientes e 0% de chegada.
 
 [^3]: O agrupamento foi baseado na abordagem k-medoids onde se identifica um ponto no grupo que represeta uma distância central considerando as variáveis utilizadas para a formação dos grupos. No caso: % de entrada e % de saída. Para conhecer um pouco mais sobre k-medoids recomendamos a leitura desse [artigo](https://en.wikipedia.org/wiki/K-medoids) na wikipedia.
 
@@ -1429,7 +1430,7 @@ O proximo passo foi identificar como os percentuais de gastos em hospitais se as
 [^4]: Tal como os dados sobre gastos informados logo na primeira seção do texto, aqui também utilizamos as informações vindas do SICONFI. A diferença é que para esse caso usamos uma [biblioteca em R](https://github.com/tchiluanda/siconfiBD) desenvolvida pela STN que facilita o consumo automatizado dos dados anuais de municípios.
 
 ```{r fig.width=20, fig.height=10, fig.dpi=500}
-agrupamento_municipio_cluster<-readRDS("agrupamento_municipio_2020.RDS")
+agrupamento_municipio_cluster<-readRDS("agrupamento_municipio_2021.RDS")
 
 g1<-
 dataset_analise %>%
