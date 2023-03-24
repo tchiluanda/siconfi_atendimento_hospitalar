@@ -60,6 +60,18 @@ library(easyalluvial)
 ###Dados
 dataset_analise <- readRDS("dataset_analise_2021.RDS")
 
+#Subsititui o valor do gasto percentual de Brasília pelo gasto percentual do DF
+#O gasto percentual do DF é calculado a partir de planilha montada com dados trazidoso do MEU SICONFI
+#Referência ano 2021, para gastos liquidados
+
+perc_brasilia_DF<- 6.734319894
+
+dataset_analise<-
+dataset_analise %>%
+  mutate(perc.x = ifelse(cod_cidade.x=="5300108", perc_brasilia_DF, perc.x),
+         perc.y = ifelse(cod_cidade.y =="5300108", perc_brasilia_DF, perc.y ))
+
+
 agrupamento_municipio_cluster<-readRDS("agrupamento_municipio_2021.RDS")
 
 load("dados_auxiliares.RData")
