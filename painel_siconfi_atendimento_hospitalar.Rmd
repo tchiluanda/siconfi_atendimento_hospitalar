@@ -1496,6 +1496,9 @@ renderDT({
            perc_entrada,
            cluster_4_k)
   
+  num_paciente_entrada<<- selecao$entrada[1]
+  num_paciente_saida<<- selecao$saida[1]
+  
   sel_graf<-
     selecao
   
@@ -1576,14 +1579,15 @@ renderDT({
                sigla_uf) %>%
         mutate(code_muni=  str_sub(id_municipio,1,6))
     ) %>%
-    mutate(uf = sigla_uf) %>%  
+    mutate(uf = sigla_uf,
+           perc_paciente_saida = round(quantidade/num_paciente_saida,2)*100) %>%  
     slice_max(quantidade, n= 5) %>%
     select(
       code_muni,
       mun_res_nome.y,
       uf,
       hierarquia, 
-      quantidade,
+      perc_paciente_saida,
       distancia
     )
   
@@ -1594,7 +1598,7 @@ renderDT({
                    "Município",
                    "UF",
                    "REGIC",
-                   "Quantidade de pacientes",
+                   "% de pacientes que saem",
                    "Distância em km"
       ),
       options = list(dom = 't'),
@@ -1666,14 +1670,15 @@ renderDT({
                sigla_uf) %>%
         mutate(code_muni=  str_sub(id_municipio,1,6))
     ) %>%
-    mutate(uf = sigla_uf) %>%
+    mutate(uf = sigla_uf,
+           perc_paciente_entrada = round(quantidade/num_paciente_entrada,2)*100) %>%
     slice_max(quantidade, n= 5) %>%
     select(
       code_muni,
       mun_res_nome.x,
       uf,
       hierarquia, 
-      quantidade,
+      perc_paciente_entrada,
       distancia
     )
   
@@ -1686,7 +1691,7 @@ renderDT({
                    "Município",
                    "UF",
                    "REGIC",
-                   "Quantidade de pacientes",
+                   "% de pacientes de outros municípios",
                    "Distância em km"
       ),
       options = list(dom = 't'),
@@ -1844,7 +1849,8 @@ renderUI({
                sigla_uf) %>%
         mutate(code_muni=  str_sub(id_municipio,1,6))
     ) %>%
-    mutate(uf = sigla_uf) %>%  
+    mutate(uf = sigla_uf,
+           perc_paciente_saida = round(quantidade/num_paciente_saida,2)*100) %>%  
     slice_max(quantidade, n= 5) %>%
     mutate(hierarquia = as.character(hierarquia)) %>%
     mutate(hierarquia = ifelse(is.na(hierarquia),"",hierarquia),
@@ -1853,7 +1859,7 @@ renderUI({
       mun_res_nome.y,
       uf,
       hierarquia, 
-      quantidade,
+      perc_paciente_saida,
       distancia
     )
   
@@ -1861,7 +1867,7 @@ renderUI({
     c("municipio_destino_paciente",
       "uf",
       "hierarquia_regic_municipio_destino",
-      "quantidade_pacientes_deslocados_ao_municipio",
+      paste("percentual_pacientes_deslocados_de_", mun_selecionado),
       "distancia_ao_municipio"
     )
   
@@ -1930,7 +1936,8 @@ renderUI({
                  sigla_uf) %>%
           mutate(code_muni=  str_sub(id_municipio,1,6))
       ) %>%
-      mutate(uf = sigla_uf) %>%
+      mutate(uf = sigla_uf,
+           perc_paciente_entrada = round(quantidade/num_paciente_entrada,2)*100) %>%
       slice_max(quantidade, n= 5)  %>%
       mutate(hierarquia = as.character(hierarquia)) %>%
       mutate(hierarquia = ifelse(is.na(hierarquia),"",hierarquia),
@@ -1939,7 +1946,7 @@ renderUI({
         mun_res_nome.x,
         uf,
         hierarquia, 
-        quantidade,
+        perc_paciente_entrada,
         distancia
       )
     
@@ -1947,7 +1954,7 @@ renderUI({
       c("municipio_origem_paciente",
         "uf",
         "hierarquia_regic_municipio_origem",
-        "quantidade_pacientes_deslocados_ao_municipio",
+        paste("percentual_de_pacientes_deslocados_para_",mun_selecionado),
         "distancia_ao_municipio"
       )
     
