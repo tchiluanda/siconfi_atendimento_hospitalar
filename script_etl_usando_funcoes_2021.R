@@ -17,6 +17,35 @@ gastos_2021 <-
 
 gastos_2021<- janitor::clean_names(gastos_2021)
 
+
+gastos_2021_hospital_exportacao<-
+  gastos_2021 %>%
+  filter(coluna == "Despesas Pagas",
+         str_sub(conta,1,6)=="10.302")%>%
+  rename(id_municipio = cod_ibge,
+         valor_gasto_hospital = valor) %>%
+  select(id_municipio, valor_gasto_hospital)
+
+gastos_2021_total_exportacao<-
+  gastos_2021 %>%
+  filter(coluna == "Despesas Pagas",
+         conta %in% c("Despesas Exceto Intraorçamentárias",
+                      "Despesas Intraorçamentárias")) %>%
+  rename(id_municipio = cod_ibge) %>%
+  group_by(instituicao, id_municipio) %>%
+  summarise(valor_total = sum(valor)) %>%
+  ungroup()
+
+gasto_2021_exportacao<-
+  gastos_2021_total_exportacao %>%
+  left_join(gastos_2021_hospital_exportacao, by = "id_municipio") %>%
+  mutate(perc = (valor_gasto_hospital/valor_total)*100)
+
+
+gasto_2021_exportacao %>%
+  readr::write_csv2("gastos_hospitalares_municipios_2021.csv")
+
+
 gastos_2021_hospital<-
   gastos_2021 %>%
   filter(coluna == "Despesas Pagas",
@@ -39,6 +68,8 @@ gastos_2021<-
   gastos_2021_hospital %>%
   inner_join(gastos_2021_total, by = "id_municipio") %>%
   mutate(perc = (valor/valor_total)*100)
+
+
 
 
 
@@ -158,6 +189,35 @@ sih_trabalho <- janitor::clean_names(sih_trabalho)
 #       mutate(codufmun = str_sub(as.character(cod_cidade),1,6)),
 #     by= "codufmun"
 #   )
+
+
+fab<-
+  sih_trabalho %>%
+  inner_join(
+    gastos_trabalho %>%
+      mutate(munic_res = str_sub(id_municipio,1,6))
+  ) %>%
+  left_join(
+    REGIC_trabalho %>%
+      mutate(munic_res = str_sub(as.character(cod_cidade),1,6)),
+    by = "munic_res"
+  ) %>%
+  inner_join(
+    cnes_trabalho,
+    by="cnes"
+  ) %>%
+  inner_join(
+    gastos_trabalho %>%
+      mutate(codufmun= str_sub(id_municipio,1,6) ) %>%
+      select(codufmun, perc, populacao, gasto_pc),
+    by= "codufmun"
+  ) %>%
+  left_join( #originalmente era inner_join
+    REGIC_trabalho %>%
+      mutate(codufmun = str_sub(as.character(cod_cidade),1,6)),
+    by= "codufmun"
+  )
+
 
 
 dataset_analise_2021<-

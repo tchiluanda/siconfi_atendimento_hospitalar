@@ -1417,7 +1417,7 @@ Na análise, utilizamos uma técnica chamada [agrupamento](https://pt.wikipedia.
 
 -   Entrada moderada: formado por 700 municípios. O município de [Guaçuí-ES](https://cidades.ibge.gov.br/brasil/es/guacui/panorama) é o município que ocupa a posição central do agrupamento[^3]. Seu percentual de atendimentos de paciente de outros municípios é 45,9% e percentual de saída de pacientes é 30,3.
 
--   Saída fraca: formado por 1020 municípios, [São Bento-MA](https://cidades.ibge.gov.br/brasil/ma/sao-bento/panorama) é o que melhor caracteriza esse grupo. Para essa cidade, O percentual de saída é 34,4% e o de entrada é 6,2%.
+-   Saída fraca: formado por 1020 municípios, [São Bento-MA](https://cidades.ibge.gov.br/brasil/ma/sao-bento/panorama) é o que melhor caracteriza esse grupo. Para essa cidade, O percentual de saída é 31,4% e o de entrada é 6,2%.
 
 -   Saída moderada: para esses casos encontramos 1075 municípios. Aqui temos como ponto central a cidade de [Nova Ipixuna-PA](https://cidades.ibge.gov.br/brasil/pa/nova-ipixuna/panorama) com saída de 64,2% dos pacientes e entrada de 4,0%
 
@@ -1425,9 +1425,9 @@ Na análise, utilizamos uma técnica chamada [agrupamento](https://pt.wikipedia.
 
 [^3]: O agrupamento foi baseado na abordagem k-medoids onde se identifica um ponto no grupo que represeta uma distância central considerando as variáveis utilizadas para a formação dos grupos. No caso: % de entrada e % de saída. Para conhecer um pouco mais sobre k-medoids recomendamos a leitura desse [artigo](https://en.wikipedia.org/wiki/K-medoids) na wikipedia.
 
-O proximo passo foi identificar como os percentuais de gastos em hospitais se associam a cada um dos grupos[^4] . A figura logo abaixo nos permite identificar algumas conclusões.
+O proximo passo foi identificar como os percentuais de gastos em hospitais se associam a cada um dos grupos[^4]. A figura logo abaixo nos permite identificar algumas conclusões.
 
-[^4]: Tal como os dados sobre gastos informados logo na primeira seção do texto, aqui também utilizamos as informações vindas do SICONFI. Os valores apresentados correspondem cálculos realizados sobre os valores pagos para todos os municípios com exceção de Brasília em que usamos o valor liquidado.
+[^4]: Tal como os dados sobre gastos informados logo na primeira seção do texto, aqui também utilizamos as informações vindas do SICONFI. A diferença é que para esse caso usamos uma [biblioteca em R](https://github.com/tchiluanda/siconfiBD) desenvolvida pela STN que facilita o consumo automatizado dos dados anuais de municípios.
 
 ```{r fig.width=20, fig.height=10, fig.dpi=500}
 agrupamento_municipio_cluster<-readRDS("agrupamento_municipio_2021.RDS")
@@ -1500,7 +1500,7 @@ g1|g2
 
 ```
 
-Cada ponto colorido dos gráficos é um município brasileiro. As cores dos pontos representam o percentual de saída de pacientes, para o gráfico esquerdo, e o percentual de atendimentos de pacientes de outras cidades, para o gráfico direito. No eixo horizontal dos dois gráficos vemos os grupos e no eixo vertical o percentual de gastos com atendimento hospitalar e ambulatorial. Os quadrados que aparecem nos gráficos são conhecidos como box-plot. A principal função do box-plot é identificar o intervalo onde ficam 75% dos valores intermediários da dimensão que queremos analisar. Esse intervalo é dado pela área entre a primeira e a terceira retas horizontais do quadrado. A reta horizontal do meio representa a mediana. Em outras palavras, para o caso em análise, 50% dos municípios apresentam proporções de gastos com atendimento hospitalar e ambulatorial menores do que o valor assinalado pela reta da mediana em cada um dos box-plots representados.
+Cada ponto colorido dos gráficos é um município brasileiro. As cores dos pontos representam o percentual de saída de pacientes, para o gráfico esquerdo, e o percentual de atendimentos de pacientes de outras cidades, para o gráfico direito. No eixo horizontal dos dois gráficos vemos os grupos e no eixo vertical o percentual de gastos com atendimento hospitalar e ambulatorial. Os quadrados que aparecem nos gráficos são conhecidos como box-plot. A principal função do box-plot é identificar o intervalo onde ficam 50% dos valores intermediários da dimensão que queremos analisar. Esse intervalo é dado pela área entre a primeira e a terceira retas horizontais do quadrado. A reta horizontal do meio representa a mediana. Em outras palavras, para o caso em análise, 50% dos municípios apresentam proporções de gastos com atendimento hospitalar e ambulatorial menores do que o valor assinalado pela reta da mediana em cada um dos box-plots representados.
 
 Feita a apresentação dos gráficos fica fácil perceber a conclusão mais importante da associação entre gastos e grupos de entrada e saída de pacientes: quando se analisa as saídas de pacientes, no gráfico à esquerda, descobrimos que o grupo **saída forte** apresenta mediana de gastos proporcionais com hospitais muito inferior aos demais grupos. Além disso, o grupo **entrada moderada** apresenta a mediana destacadamente superior aos demais grupos.
 
@@ -1583,7 +1583,9 @@ Já no final do texto percebemos que os gastos hospitalares estão associados in
 
 ### Um pouco sobre o painel
 
-Provavelmente você está lendo esse texto a partir de um painel produzido pela Secretaria do Tesouro Nacional. Além desse material, o painel conta com páginas que permitem localizar os municípios dentro dos quadros analíticos explorados ao longo do texto. É possível também que, com a evolução das sugestões de usuários, novas páginas sejam acrescentadas sem necessariamente haver análises feitas pela equipe da STN. Convidamos o leitor a navegar por entre as abas disponibilizadas, fazer filtros, baixar dados e capturar gráficos para outras ressignficações dos dados sobre atendimentos hospitalares no Brasil e suas relações com execuções orçamentárias municipais.
+Provavelmente você está lendo esse texto a partir de um painel produzido pela Secretaria do Tesouro Nacional. Além desse material, o painel conta com páginas que permitem localizar os municípios dentro dos quadros analíticos explorados ao longo do texto. Assim como no texto, todos os dados do painel referem-se à amostra de 10% do total das internações ocorridas no Brasil em 2021. É possível também que, com a evolução das sugestões de usuários, novas páginas sejam acrescentadas sem necessariamente haver análises feitas pela equipe da STN. Convidamos o leitor a navegar por entre as abas disponibilizadas, fazer filtros, baixar dados e capturar gráficos para outras ressignficações dos dados sobre atendimentos hospitalares no Brasil e suas relações com execuções orçamentárias municipais.
+
+Prepramos um pequeno vídeo que ensina como utilizar o painel. Veja [aqui](https://www.youtube.com/watch?v=KA6tFDrPts8).
 
 ### Agradecimentos
 

@@ -4,7 +4,6 @@ output:
   flexdashboard::flex_dashboard:
     orientation: columns
     vertical_layout: fill
-    social: menu
     source_code: https://github.com/tchiluanda/siconfi_atendimento_hospitalar
 runtime: shiny
 ---
@@ -17,6 +16,15 @@ runtime: shiny
 
   gtag('config', 'G-PK2407NCVV');
 </script>
+
+
+
+```{css}
+    .chart-shim {
+      overflow: auto;
+    }
+
+```
 
 
 
@@ -55,6 +63,7 @@ library(plotly)
 library(DT)
 library(readr)
 library(easyalluvial)
+library(kableExtra)
 
 
 ###Dados
@@ -67,14 +76,30 @@ dataset_analise <- readRDS("dataset_analise_2021.RDS")
 perc_brasilia_DF<- 6.734319894
 
 dataset_analise<-
-dataset_analise %>%
-  mutate(perc.x = ifelse(cod_cidade.x=="5300108", perc_brasilia_DF, perc.x),
-         perc.y = ifelse(cod_cidade.y =="5300108", perc_brasilia_DF, perc.y ))
+  dataset_analise %>%
+  mutate(perc.x = ifelse(munic_res=="530010", perc_brasilia_DF, perc.x),
+         perc.y = ifelse(codufmun =="530010", perc_brasilia_DF, perc.y ))
+  
+  
+# dataset_analise %>%
+#   mutate(perc.x = ifelse(cod_cidade.x=="5300108", perc_brasilia_DF, perc.x),
+#          perc.y = ifelse(cod_cidade.y =="5300108", perc_brasilia_DF, perc.y ))
 
 
 agrupamento_municipio_cluster<-readRDS("agrupamento_municipio_2021.RDS")
 
 load("dados_auxiliares.RData")
+
+# dataset_analise<-
+# dataset_analise %>%
+#   inner_join(
+#     pop_municipios %>%
+#       select(id_municipio,
+#              sigla_uf) 
+#   ) %>%
+#   mutate(uf.x = sigla_uf,
+#          uf.y = sigla_uf) %>%
+#   select(-sigla_uf)
 
 de_para_hierarquia <- read_delim("de_para_hierarquia.csv", 
     delim = ";", escape_double = FALSE, trim_ws = TRUE)
@@ -231,7 +256,7 @@ busca_hierarquia_regic<- function(){
   
 }
 
-plot_mapa_entrada_saida <- function (tipo_es, mun_es){
+plot_mapa_entrada_saida <- function (tipo_es, mun_es, somente_dados= FALSE){
   
   muni_sel<-
     municipios_seat %>%
@@ -256,14 +281,20 @@ plot_mapa_entrada_saida <- function (tipo_es, mun_es){
     var_fill<- "perc_saida"
   }
   
-  
-  
-  municipios_seat %>%
+  dados<-
+    municipios_seat %>%
     mutate(code_muni = str_sub(as.character(code_muni),1,6)) %>%
     inner_join(
       REGIC_trabalho%>%
         mutate(code_muni = str_sub(as.character(cod_cidade),1,6))
-    ) %>%
+    )
+  
+  if (somente_dados){
+    return(dados)
+  }
+  
+  
+  dados %>%
     ggplot()+
     geom_sf(data = estados_mapa, fill=NA, color="#808080")+
     geom_sf(aes( fill= !!sym(var_fill)),pch=21, color="#444444", size=0.8, alpha=0.6)+
@@ -1341,28 +1372,46 @@ DT::renderDataTable({
   
   selecao<-
 dataset_analise %>%
-  filter(deslocamento == 1,
-         perc.x>=0,
-         perc.x<=50) %>% 
-  distinct(nome_nivel_hierarquia.x,munic_res, perc.x, mun_res_nome.x) %>%
+  filter(deslocamento == 1) %>% # antes havia esse filtro complementar: ,perc.x>=0,perc.x<=50
+  distinct(nome_nivel_hierarquia.x,munic_res,uf.x, perc.x, mun_res_nome.x) %>%
   inner_join(
     agrupamento_municipio_cluster %>%
       rename(munic_res=code_muni)
   ) %>%
-    rename(codigo_muni=munic_res)
+  rename(codigo_muni=munic_res) %>% 
+  inner_join(
+    pop_municipios %>%
+      select(id_municipio,
+             sigla_uf) %>%
+      mutate(codigo_muni=  str_sub(id_municipio,1,6))
+  ) %>%
+  mutate(uf.x = sigla_uf)  
+
     
 
   selecao %>%
     select(-c(liquido,id_agrupamento)) %>%
+    select(codigo_muni,
+           mun_res_nome.x,
+           uf.x,
+           perc.x,
+           nome_nivel_hierarquia.x,
+           entrada,
+           local,
+           saida,
+           perc_saida,
+           perc_entrada,
+           cluster_4_k) %>%
     arrange(mun_res_nome.x) %>%
   datatable(
             colnames = c("Código Município",
                          "Município",
+                         "UF",
                          "% gasto",
                          "REGIC",
                          "Entrada de paciente",
                          "Atendimento local",
-                         "Sáida de paciente",
+                         "Saída de paciente",
                          "% atendimentos em outra cidade",
                          "% atendimentos de outra cidade",
                          "Agrupamento"
@@ -1377,8 +1426,578 @@ dataset_analise %>%
                            buttons = c('copy', 'csv', 'excel', 'pdf', 'print')
                       ) 
             )%>%
-    formatRound(c(3,8,9),digits = 2, mark=".", dec.mark= ",")%>%
-    formatRound(c(5:7),digits = 0, mark=".", dec.mark= ",")
+    formatRound(c(4,9,10),digits = 2, mark=".", dec.mark= ",")%>%
+    formatRound(c(6:8),digits = 0, mark=".", dec.mark= ",")
+  
+})
+
+```
+
+
+Síntese
+=====================================  
+
+
+Inputs {.sidebar}
+-------------------------------------
+
+```{r}
+# shiny inputs defined here
+selectInput(inputId = "regic_mun_vis", label= "Selecione um municipio", choices= busca_todos_municipios(),selected = "Recife", multiple = FALSE, selectize = TRUE )
+
+
+
+# Create placeholder for the downloadButton
+```
+
+
+
+Column
+-----------------------------------------------------------------------
+
+
+### Diagnóstico de oferta e demanda de atendimento para o município   
+
+
+```{r}
+
+renderDT({
+  
+  selecao<-
+    dataset_analise %>%
+    filter(deslocamento == 1,
+           mun_res_nome.x == input$regic_mun_vis) %>% # antes havia esse filtro complementar: ,perc.x>=0,perc.x<=50
+    distinct(nome_nivel_hierarquia.x,munic_res, uf.x,perc.x, mun_res_nome.x) %>%
+    inner_join(
+      agrupamento_municipio_cluster %>%
+        rename(munic_res=code_muni)
+    ) %>%
+    rename(codigo_muni=munic_res)%>% 
+    inner_join(
+      pop_municipios %>%
+        select(id_municipio,
+               sigla_uf) %>%
+        mutate(codigo_muni=  str_sub(id_municipio,1,6))
+    ) %>%
+    mutate(uf.x = sigla_uf)  
+  
+  selecao<-
+    selecao %>%
+    select(-c(liquido,id_agrupamento)) %>%
+    select(codigo_muni,
+           mun_res_nome.x,
+           uf.x,
+           perc.x,
+           nome_nivel_hierarquia.x,
+           entrada,
+           local,
+           saida,
+           perc_saida,
+           perc_entrada,
+           cluster_4_k)
+  
+  sel_graf<-
+    selecao
+  
+  
+  sel_graf %>%
+    datatable(
+      colnames = c("Código Município",
+                   "Município",
+                   "UF",
+                   "% gasto",
+                   "REGIC",
+                   "Entrada de paciente",
+                   "Atendimento local",
+                   "Saída de paciente",
+                   "% atendimentos em outra cidade",
+                   "% atendimentos de outra cidade",
+                   "Agrupamento"
+      ),
+      options = list(dom = 't'),
+      #fillContainer = TRUE,
+      rownames = FALSE,
+      #filter = 'top' 
+    )%>%
+    formatRound(c(4,9,10),digits = 2, mark=".", dec.mark= ",")%>%
+    formatRound(c(6:8),digits = 0, mark=".", dec.mark= ",")
+  
+  
+})
+
+
+```
+
+### Cinco destinos mais frequentes dos pacientes do municípios
+
+
+```{r}
+
+renderDT({
+  
+  codigo_muni<-
+    unique(dataset_analise$munic_res[dataset_analise$mun_res_nome.x %in% input$regic_mun_vis])
+  
+  print(codigo_muni)
+
+
+  
+  muni_sel<- 
+    dataset_analise %>%
+    filter(deslocamento ==1,
+           munic_res ==	codigo_muni) %>%
+    group_by(munic_res,mun_res_nome.x,nome_nivel_hierarquia_ordenado.x, uf.x) %>%
+    summarise(quantidade = n()) %>%
+    rename(code_muni= munic_res,
+           hierarquia = nome_nivel_hierarquia_ordenado.x,
+           uf = uf.x) %>%
+    mutate(tipo_deslocamento  = "origem",
+           distancia = 0) %>%
+    bind_rows(
+      dataset_analise %>%
+        filter(deslocamento ==1,
+               munic_res==	codigo_muni) %>%
+        group_by(codufmun,mun_res_nome.y, nome_nivel_hierarquia_ordenado.y, uf.y) %>%
+        summarise(
+          quantidade = n(),
+          distancia =min(distancia)
+        ) %>%
+        ungroup() %>%
+        rename(code_muni= codufmun,
+               hierarquia = nome_nivel_hierarquia_ordenado.y,
+               uf=uf.y)%>%
+        mutate(tipo_deslocamento  = "destino")
+    ) %>%
+    filter(distancia != 0) %>%
+    ungroup()%>% 
+    inner_join(
+      pop_municipios %>%
+        select(id_municipio,
+               sigla_uf) %>%
+        mutate(code_muni=  str_sub(id_municipio,1,6))
+    ) %>%
+    mutate(uf = sigla_uf) %>%  
+    slice_max(quantidade, n= 5) %>%
+    select(
+      code_muni,
+      mun_res_nome.y,
+      uf,
+      hierarquia, 
+      quantidade,
+      distancia
+    )
+  
+  
+  muni_sel %>%
+    datatable(
+      colnames = c("Código Município",
+                   "Município",
+                   "UF",
+                   "REGIC",
+                   "Quantidade de pacientes",
+                   "Distância em km"
+      ),
+      options = list(dom = 't'),
+      #fillContainer = TRUE,
+      rownames = FALSE,
+      #filter = 'top'
+    )%>%
+    formatRound(6,digits = 2, mark=".", dec.mark= ",")
+  
+  
+})
+
+
+```
+
+
+
+### Cinco origens mais frequentes dos pacientes atendidos no município
+
+
+```{r}
+
+renderDT({
+  
+  if (NROW(unique(dataset_analise$codufmun[dataset_analise$mun_res_nome.y==input$regic_mun_vis])) == 0){
+    return()
+  }
+  
+  codigo_muni<-
+    unique(dataset_analise$codufmun[dataset_analise$mun_res_nome.y==input$regic_mun_vis])
+  
+  print("codigo_muni")
+  print(codigo_muni)
+  
+
+  municipio_selecionado<-codigo_muni
+  
+  muni_sel<- 
+    dataset_analise %>%
+    filter(deslocamento ==1,
+           codufmun==	municipio_selecionado) %>%
+    group_by(codufmun,mun_res_nome.y,nome_nivel_hierarquia_ordenado.y, uf.y) %>%
+    summarise(quantidade = n()) %>%
+    rename(code_muni= codufmun,
+           hierarquia = nome_nivel_hierarquia_ordenado.y,
+           uf = uf.y) %>%
+    mutate(tipo_deslocamento  = "destino",
+           distancia = 0) %>%
+    bind_rows(
+      dataset_analise %>%
+        filter(deslocamento ==1,
+               codufmun==	municipio_selecionado) %>%
+        group_by(munic_res,mun_res_nome.x, nome_nivel_hierarquia_ordenado.x, uf.x) %>%
+        summarise(
+          quantidade = n(),
+          distancia =min(distancia)
+        ) %>%
+        ungroup() %>%
+        rename(code_muni= munic_res,
+               hierarquia = nome_nivel_hierarquia_ordenado.x,
+               uf=uf.x)%>%
+        mutate(tipo_deslocamento  = "origem")
+    )%>%
+    filter(distancia != 0) %>%
+    ungroup()%>% 
+    inner_join(
+      pop_municipios %>%
+        select(id_municipio,
+               sigla_uf) %>%
+        mutate(code_muni=  str_sub(id_municipio,1,6))
+    ) %>%
+    mutate(uf = sigla_uf) %>%
+    slice_max(quantidade, n= 5) %>%
+    select(
+      code_muni,
+      mun_res_nome.x,
+      uf,
+      hierarquia, 
+      quantidade,
+      distancia
+    )
+  
+  
+
+  
+  muni_sel %>%
+    datatable(
+      colnames = c("Código Município",
+                   "Município",
+                   "UF",
+                   "REGIC",
+                   "Quantidade de pacientes",
+                   "Distância em km"
+      ),
+      options = list(dom = 't'),
+      #fillContainer = TRUE,
+      rownames = FALSE,
+      #filter = 'top'
+    )%>%
+    formatRound(6,digits = 2, mark=".", dec.mark= ",")
+  
+  
+})
+
+
+```
+
+### Copie o texto abaixo e cole no chatGPT
+
+
+```{r}
+
+renderUI({
+  
+  str_info_metodologia<- tibble(texto=character(12))
+  
+  str_info_metodologia$texto[1]<- "O portal deslocamentos e gastos hospitalares dos municípios traz um estudo e paineis que buscam identificar a associação entre gastos municipais com atendimentos hospitalares e deslocamento de pacientes para outros municípios."
+  
+  str_info_metodologia$texto[2]<- "Metadados:"
+  
+  str_info_metodologia$texto[3]<- "1- Fonte: Datasus (SIH e CNES), IBGE e STN."
+  
+  str_info_metodologia$texto[4] <- "2- Os dados são todos de 2021"
+  
+  str_info_metodologia$texto[5]<- "3- O estudo foi produzido pela Secretaria do Tesouro Nacional (STN) e está disponível a partir do endereço  https://siconfi-atendimento-hospitalar.tesouro.gov.br/"
+  
+  str_info_metodologia$texto[6]<- "Metodologia:"
+  
+  str_info_metodologia$texto[7]<- "Os muncípios foram analisados tendo como referência o modelo REGIC de hierarquia das cidades do Brasil a partir da influência e capacidade de gestão das cidades. O modelo REGIC foi produzido pelo IBGE."
+  
+  
+  str_info_metodologia$texto[8]<- "Para cada município foi identificado o percentual de pacientes da cidade que é atendido em outras cidades e também o percentual de atendimentos feitos na cidade que corresponde a pacientes vindos de outras cidades"
+  
+  
+  str_info_metodologia$texto[9]<- "O estudo apresenta agrupamentos de cidades a partir da combinação do percentual de entrada de pacientes vindos de outros municípios com o percentual de pacientes da cidade que são atendidos em outras localidades. Foram gerados quatro agrupamentos: entrada moderada, saída fraca, saída moderada e saída forte. O grupo com mais representantes é o de saída forte"
+  
+  
+  str_info_metodologia$texto[10]<- "Conclusões:"
+  
+  str_info_metodologia$texto[11]<- "Os municípios com menor capacidade de gestão e influência e além disso com menor percentual gasto em atendimento hospitalar e ambulatorial caracterizam os grupos saída moderada e saída forte. Já o grupo entrada moderada é dominado por municípios com maior capacidade de gestão e de influência " 
+  
+  str_info_metodologia$texto[12]<- "Escreva um texto jornalístico com linguagem de jornalismo local a partir das informações acima, bem como a partir das informações que caracterizam um município escolhido para ser analisado de forma mais específica. Na análise para os dados de município deve-se considerar os dados apresentados nas três seções de dados em formato csv que serão apresentados mais a frente. É importante frisar que os dados que mostram os números absolutos apresentados referem-se a uma amostra de 10% de todos os atendimentos registrados em 2021 no sistema de internação hospitalar (SIH) do Datasus."
+  
+  
+  mun_selecionado<-input$regic_mun_vis
+  
+  selecao<-
+    dataset_analise %>%
+    filter(deslocamento == 1,
+           mun_res_nome.x == mun_selecionado) %>% # antes havia esse filtro complementar: ,perc.x>=0,perc.x<=50
+    distinct(nome_nivel_hierarquia.x,munic_res, uf.x,perc.x, mun_res_nome.x) %>%
+    inner_join(
+      agrupamento_municipio_cluster %>%
+        rename(munic_res=code_muni)
+    ) %>%
+    rename(codigo_muni=munic_res)%>% 
+    inner_join(
+      pop_municipios %>%
+        select(id_municipio,
+               sigla_uf) %>%
+        mutate(codigo_muni=  str_sub(id_municipio,1,6))
+    ) %>%
+    mutate(uf.x = sigla_uf)  
+  
+  selecao<-
+    selecao %>%
+    select(-c(liquido,id_agrupamento)) %>%
+    mutate(
+      perc_saida = round(perc_saida,2),
+      perc_entrada = round(perc_entrada,2),
+      cluster_4_k = as.character(cluster_4_k)
+    ) %>%
+    select(mun_res_nome.x,
+           uf.x,
+           perc.x,
+           nome_nivel_hierarquia.x,
+           entrada,
+           local,
+           saida,
+           perc_saida,
+           perc_entrada,
+           cluster_4_k) 
+  
+  print(selecao)
+  
+  
+  names(selecao)<-
+    c("Municipio",
+      "UF",
+      "percentual_gasto_em_atendimento_hospitalar",
+      "hierarquia_do_REGIC",
+      "numero_amostral_de-paciente_vindos_de_outros_municipios",
+      "numero_amostral_de_pacientes_da_dade_atendidos_localmente",
+      "numero_amostral_pacientes_atendidos_em_outros_municipios",
+      "percentual_pacientes_atendidos_em_outra_cidade",
+      "percentual_atendimentos_de_pacientes_de_outra cidade",
+      "grupo_do_municipio"
+    )
+  
+  str_info_tabela_1<- tibble(texto = "Diagnóstico de oferta e demanda de atendimento para o município:")
+  str_names_colunas_tabela_1<- tibble(texto= str_c(names(selecao), collapse = ","))
+  
+  
+  str_df_tabela_1<-
+    purrr::map_dfr(1:NROW(selecao), function(num_linha){
+      tibble(texto=str_c(selecao[num_linha,], collapse = ","))
+    })
+  
+  
+  codigo_muni<-
+    unique(dataset_analise$munic_res[dataset_analise$mun_res_nome.x %in% mun_selecionado])
+  
+  
+  
+  
+  muni_sel<- 
+    dataset_analise %>%
+    filter(deslocamento ==1,
+           munic_res ==	codigo_muni) %>%
+    group_by(munic_res,mun_res_nome.x,nome_nivel_hierarquia_ordenado.x, uf.x) %>%
+    summarise(quantidade = n()) %>%
+    rename(code_muni= munic_res,
+           hierarquia = nome_nivel_hierarquia_ordenado.x,
+           uf = uf.x) %>%
+    mutate(tipo_deslocamento  = "origem",
+           distancia = 0) %>%
+    bind_rows(
+      dataset_analise %>%
+        filter(deslocamento ==1,
+               munic_res==	codigo_muni) %>%
+        group_by(codufmun,mun_res_nome.y, nome_nivel_hierarquia_ordenado.y, uf.y) %>%
+        summarise(
+          quantidade = n(),
+          distancia =min(distancia)
+        ) %>%
+        ungroup() %>%
+        rename(code_muni= codufmun,
+               hierarquia = nome_nivel_hierarquia_ordenado.y,
+               uf=uf.y)%>%
+        mutate(tipo_deslocamento  = "destino")
+    ) %>%
+    filter(distancia != 0) %>%
+    ungroup()%>% 
+    inner_join(
+      pop_municipios %>%
+        select(id_municipio,
+               sigla_uf) %>%
+        mutate(code_muni=  str_sub(id_municipio,1,6))
+    ) %>%
+    mutate(uf = sigla_uf) %>%  
+    slice_max(quantidade, n= 5) %>%
+    mutate(hierarquia = as.character(hierarquia)) %>%
+    mutate(hierarquia = ifelse(is.na(hierarquia),"",hierarquia),
+           distancia = round(distancia,2)) %>%
+    select(
+      mun_res_nome.y,
+      uf,
+      hierarquia, 
+      quantidade,
+      distancia
+    )
+  
+  names(muni_sel)<-
+    c("municipio_destino_paciente",
+      "uf",
+      "hierarquia_regic_municipio_destino",
+      "quantidade_pacientes_deslocados_ao_municipio",
+      "distancia_ao_municipio"
+    )
+  
+  
+  
+  
+  str_info_tabela_2<- tibble(texto = "Cinco destinos mais frequentes dos pacientes do municípios:")
+  str_names_colunas_tabela_2<- tibble(texto= str_c(names(muni_sel), collapse = ","))
+  
+  
+  str_df_tabela_2<-
+    purrr::map_dfr(1:NROW(muni_sel), function(num_linha){
+      tibble(texto=str_c(muni_sel[num_linha,], collapse = ","))
+    })
+  
+  
+  info_entrada<- TRUE
+  
+  if (NROW(unique(dataset_analise$codufmun[dataset_analise$mun_res_nome.y==mun_selecionado])) == 0){
+    
+    info_entrada<- FALSE
+    str_disclaimer <- tibble(texto= "O município não recebeu pacientes de fora")
+    
+  } else{
+    
+    codigo_muni<-
+      unique(dataset_analise$codufmun[dataset_analise$mun_res_nome.y==mun_selecionado])
+    
+    print("codigo_muni")
+    print(codigo_muni)
+    
+    
+    municipio_selecionado<-codigo_muni
+    
+    muni_sel<- 
+      dataset_analise %>%
+      filter(deslocamento ==1,
+             codufmun==	municipio_selecionado) %>%
+      group_by(codufmun,mun_res_nome.y,nome_nivel_hierarquia_ordenado.y, uf.y) %>%
+      summarise(quantidade = n()) %>%
+      rename(code_muni= codufmun,
+             hierarquia = nome_nivel_hierarquia_ordenado.y,
+             uf = uf.y) %>%
+      mutate(tipo_deslocamento  = "destino",
+             distancia = 0) %>%
+      bind_rows(
+        dataset_analise %>%
+          filter(deslocamento ==1,
+                 codufmun==	municipio_selecionado) %>%
+          group_by(munic_res,mun_res_nome.x, nome_nivel_hierarquia_ordenado.x, uf.x) %>%
+          summarise(
+            quantidade = n(),
+            distancia =min(distancia)
+          ) %>%
+          ungroup() %>%
+          rename(code_muni= munic_res,
+                 hierarquia = nome_nivel_hierarquia_ordenado.x,
+                 uf=uf.x)%>%
+          mutate(tipo_deslocamento  = "origem")
+      )%>%
+      filter(distancia != 0) %>%
+      ungroup()%>% 
+      inner_join(
+        pop_municipios %>%
+          select(id_municipio,
+                 sigla_uf) %>%
+          mutate(code_muni=  str_sub(id_municipio,1,6))
+      ) %>%
+      mutate(uf = sigla_uf) %>%
+      slice_max(quantidade, n= 5)  %>%
+      mutate(hierarquia = as.character(hierarquia)) %>%
+      mutate(hierarquia = ifelse(is.na(hierarquia),"",hierarquia),
+           distancia = round(distancia,2)) %>%
+      select(
+        mun_res_nome.x,
+        uf,
+        hierarquia, 
+        quantidade,
+        distancia
+      )
+    
+    names(muni_sel)<-
+      c("municipio_origem_paciente",
+        "uf",
+        "hierarquia_regic_municipio_origem",
+        "quantidade_pacientes_deslocados_ao_municipio",
+        "distancia_ao_municipio"
+      )
+    
+    str_info_tabela_3<- tibble(texto = "Cinco origens mais frequentes dos pacientes atendidos no município:")
+    str_names_colunas_tabela_3<- tibble(texto= str_c(names(muni_sel), collapse = ","))
+    
+    str_df_tabela_3<-
+      purrr::map_dfr(1:NROW(muni_sel), function(num_linha){
+        tibble(texto=str_c(muni_sel[num_linha,], collapse = ","))
+      })
+    
+  }
+  
+  if (info_entrada){
+    
+    texto_gpt<-
+      str_info_metodologia %>%
+      bind_rows(str_info_tabela_1,
+                str_names_colunas_tabela_1,
+                str_df_tabela_1,
+                str_info_tabela_2,
+                str_names_colunas_tabela_2,
+                str_df_tabela_2,
+                str_info_tabela_3,
+                str_names_colunas_tabela_3,
+                str_df_tabela_3)
+    
+    
+  } else{
+    texto_gpt<-
+      str_info_metodologia %>%
+      bind_rows(str_info_tabela_1,
+                str_names_colunas_tabela_1,
+                str_df_tabela_1,
+                str_info_tabela_2,
+                str_names_colunas_tabela_2,
+                str_df_tabela_2,
+                str_disclaimer)
+    
+  }
+  
+  
+  
+  
+  
+  
+  HTML(
+    kable(texto_gpt)
+  )
+  
   
 })
 
