@@ -63,7 +63,6 @@ library(plotly)
 library(DT)
 library(readr)
 library(easyalluvial)
-library(kableExtra)
 
 
 ###Dados
@@ -1536,6 +1535,7 @@ renderDT({
 
 ```{r}
 
+#Para onde vão 80% dos pacientes que são atendidos fora do município
 renderDT({
   
   codigo_muni<-
@@ -1579,6 +1579,7 @@ renderDT({
                sigla_uf) %>%
         mutate(code_muni=  str_sub(id_municipio,1,6))
     ) %>%
+    #arrange(desc(quantidade)) %>%
     mutate(uf = sigla_uf,
            perc_paciente_saida = round(quantidade/num_paciente_saida,2)*100) %>%  
     slice_max(quantidade, n= 5) %>%
@@ -1707,12 +1708,12 @@ renderDT({
 
 ```
 
-### Copie o texto abaixo e cole no chatGPT
+### Copie o texto abaixo e cole no chatGPT (se usar essa funcionalidade confira o texto gerado pela IA comparando com os dados e conceitos do estudo)
 
 
 ```{r}
 
-renderUI({
+renderDataTable({
   
   str_info_metodologia<- tibble(texto=character(12))
   
@@ -1937,11 +1938,11 @@ renderUI({
           mutate(code_muni=  str_sub(id_municipio,1,6))
       ) %>%
       mutate(uf = sigla_uf,
-           perc_paciente_entrada = round(quantidade/num_paciente_entrada,2)*100) %>%
+             perc_paciente_entrada = round(quantidade/num_paciente_entrada,2)*100) %>%
       slice_max(quantidade, n= 5)  %>%
       mutate(hierarquia = as.character(hierarquia)) %>%
       mutate(hierarquia = ifelse(is.na(hierarquia),"",hierarquia),
-           distancia = round(distancia,2)) %>%
+             distancia = round(distancia,2)) %>%
       select(
         mun_res_nome.x,
         uf,
@@ -1997,13 +1998,30 @@ renderUI({
   }
   
   
-  
-  
-  
-  
-  HTML(
-    kable(texto_gpt)
+  DT::datatable(
+    texto_gpt,
+    #class = "",
+    rownames = FALSE,
+    colnames = c(""),
+    fillContainer = TRUE,
+    selection = c("none"),
+    extensions = 'Buttons',
+    options = list(
+      ordering=FALSE,
+      paging=FALSE,
+      searching= FALSE,
+      info = FALSE,
+      pageLength = NROW(texto_gpt),
+      dom = 'Bfrtip',
+      buttons = c('copy')
+    )
   )
+  
+  
+  
+  # HTML(
+  #   kable(texto_gpt)
+  # )
   
   
 })
