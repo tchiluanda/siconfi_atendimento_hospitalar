@@ -1367,7 +1367,7 @@ Column
 ### Tabela de municípios
 
 ```{r}
-DT::renderDataTable({
+DT::renderDataTable(server = FALSE, {
   
   selecao<-
 dataset_analise %>%
@@ -1708,7 +1708,7 @@ renderDT({
 
 ```
 
-### Copie o texto abaixo e cole no chatGPT (se usar essa funcionalidade confira o texto gerado pela IA comparando com os dados e conceitos do estudo)
+### Copie o texto abaixo e cole na sua interface de IA (ex: chatGPT, Bard). Se usar essa funcionalidade confira o texto gerado pela IA comparando com os dados e conceitos do estudo.
 
 
 ```{r}
