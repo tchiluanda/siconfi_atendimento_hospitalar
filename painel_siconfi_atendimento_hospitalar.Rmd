@@ -66,7 +66,10 @@ library(easyalluvial)
 
 
 ###Dados
+ regioes_saude <- readRDS("regioes_saude.RDS")
+
 dataset_analise <- readRDS("dataset_analise_2021.RDS")
+
 
 #Subsititui o valor do gasto percentual de Brasília pelo gasto percentual do DF
 #O gasto percentual do DF é calculado a partir de planilha montada com dados trazidoso do MEU SICONFI
@@ -1050,9 +1053,10 @@ renderPlot({
       muni_sel
     ) %>%
     ggplot()+
-    geom_sf(data = estados_mapa, fill=NA, color="#505050")+#505050
-    geom_sf( aes(fill=quantidade),pch=21, color="#444444", size=2, show.legend = TRUE)+
+    geom_sf( aes(fill=quantidade),pch=21, color="#444444", size=1, show.legend = TRUE)+
     geom_sf( data= muni_sel_foco, aes(size=quantidade),pch=21, color="#444444", fill="white")+
+    geom_sf(data= regioes_saude, fill= NA, color = "#505050")+
+    geom_sf(data = estados_mapa, fill=NA, color="lightgreen")+#505050
     geom_text_repel(data = muni_sel_repel,
                     aes(x=X, y=Y, label= str_wrap(paste(name_muni,":",quantidade),10)), 
                     color = "white", 

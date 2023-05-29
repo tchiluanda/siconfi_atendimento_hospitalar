@@ -71,9 +71,6 @@ gastos_2021<-
 
 
 
-
-
-
 populacao_2021<- populacao_municipios(2021)
 
 estados_1<- c("AC","AL","AM", "AP", "BA","CE","DF","ES","GO","MA","MT","MS")
@@ -307,5 +304,17 @@ municipios_seat<- cbind(municipios_seat, st_coordinates(st_centroid(municipios_s
 
 save(list=c("REGIC_trabalho","municipios_seat","municipios","estados_mapa","brasil","pop_municipios"), file = "dados_auxiliares_2021.RData")
 
+dados_sih_3_2021 %>%
+  filter(is.na(ETNIA))
 
 
+library(geobr)
+regioes_saude<- geobr::read_health_region()
+
+saveRDS(regioes_saude,"regioes_saude.RDS")
+
+
+library(tidyverse)
+regioes_saude %>%
+  ggplot() +
+  geom_sf(color= "green")
