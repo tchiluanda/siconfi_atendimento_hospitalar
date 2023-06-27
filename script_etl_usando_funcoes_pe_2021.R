@@ -111,7 +111,7 @@ cnes_trabalho<-
   dados_cnes_2021 %>%
   mutate(munResLat = as.numeric(munResLat),
          munResLon = as.numeric(munResLon)) %>%
-  select(CNES, CODUFMUN, munResNome, munResLat, munResLon )
+  select(CNES, CODUFMUN, munResNome, munResLat, munResLon, FANTASIA )
 
 cnes_trabalho <- janitor::clean_names(cnes_trabalho)
 
@@ -132,8 +132,7 @@ head(amostra_sih_2021$DIAG_PRINC)
 
 sih_trabalho<-
   amostra_sih_2021 %>%
-  filter(substr(DIAG_PRINC,1,1)=="O",
-         substr(MUNIC_RES,1,2)=="26") %>%
+  filter(substr(DIAG_PRINC,1,1)=="O" ) %>%
   mutate(munResLat = as.numeric(munResLat),
          munResLon = as.numeric(munResLon)) %>%
   select(CNES, MUNIC_RES, munResNome, munResLat, munResLon, DIAG_PRINC)
@@ -173,45 +172,123 @@ dataset_analise_2021_pe_parto<-
   )
 
 
+
 ###Acrescentar informações faltantes dos dados de destino dos pacientes.
 
+dataset_analise_2021_pe_parto<-
 dataset_analise_2021_pe_parto  %>%
-  rename(codigo_muni=munic_res) %>%
+  filter(substr(munic_res,1,2)=="26" | substr(codufmun,1,2)=="26" ) %>%
+  #rename(codigo_muni=codufmun) %>%
   inner_join(
-    pop_municipios %>%
+    populacao_2021 %>%
       select(id_municipio,
              sigla_uf) %>%
       mutate(codigo_muni=  str_sub(id_municipio,1,6))
-  ) %>%
+  , by= join_by(codufmun == codigo_muni )) %>%
   mutate(uf.y = sigla_uf)
+
+dataset_analise_2021_pe_parto<-
+  dataset_analise_2021_pe_parto  %>%
+  inner_join(
+    populacao_2021 %>%
+      select(id_municipio,
+             sigla_uf) %>%
+      mutate(codigo_muni=  str_sub(id_municipio,1,6))
+    , by= join_by(munic_res == codigo_muni )) %>%
+  mutate(uf.x = sigla_uf.y)
+
 
 
 #função para cálculo de distância
 library(geosphere)
 
 
+dataset_analise_2021_pe_parto$distancia<-
 
-dataset_analise_2021$distancia<-
-
-  map_dbl(1:NROW(dataset_analise_2021),function(id){
+  map_dbl(1:NROW(dataset_analise_2021_pe_parto),function(id){
 
     #print(id)
-    c(geosphere::distm(c(dataset_analise_2021$mun_res_lat.x[id], dataset_analise_2021$mun_res_lon.x[id]),
-                       c(dataset_analise_2021$mun_res_lat.y[id], dataset_analise_2021$mun_res_lon.y[id]),
+    c(geosphere::distm(c(dataset_analise_2021_pe_parto$mun_res_lat.x[id], dataset_analise_2021_pe_parto$mun_res_lon.x[id]),
+                       c(dataset_analise_2021_pe_parto$mun_res_lat.y[id], dataset_analise_2021_pe_parto$mun_res_lon.y[id]),
                        fun = distHaversine))
 
 
   })
 
-distancia<- dataset_analise_2021$distancia/1000
+distancia<- dataset_analise_2021_pe_parto$distancia/1000
 
-dataset_analise_2021$distancia<- distancia
+dataset_analise_2021_pe_parto$distancia<- distancia
 
-dataset_analise_2021$deslocamento<- ifelse(dataset_analise_2021$distancia==0,0,1)
+dataset_analise_2021_pe_parto$deslocamento<- ifelse(dataset_analise_2021_pe_parto$distancia==0,0,1)
 
 
 
-saveRDS(dataset_analise_2021,"dataset_analise_2021.RDS")
+saveRDS(dataset_analise_2021_pe_parto,"dataset_analise_2021_pe_parto.RDS")
+
+glimpse(dataset_analise_2021_pe_parto)
+
+dados_pe_obstetricia_2021_csv<-
+dataset_analise_2021_pe_parto %>%
+  select(diag_princ,
+         munic_res,
+         mun_res_nome.x,
+         uf.x,
+         mun_res_lat.x,
+         mun_res_lon.x,
+         perc.x,
+         populacao.x,
+         gasto_pc.x,
+         nivel_hierarquia.x,
+         nome_nivel_hierarquia.x,
+         cnes,
+         fantasia,
+         codufmun,
+         mun_res_nome.y,
+         uf.y,
+         mun_res_lat.y,
+         mun_res_lon.y,
+         perc.y,
+         populacao.y,
+         gasto_pc.y,
+         uf.y,
+         nivel_hierarquia.y,
+         nome_nivel_hierarquia.y,
+         distancia,
+         deslocamento
+         )
+
+names(dados_pe_obstetricia_2021_csv)<-
+  c(
+    "cid_diagnostico_principal",
+    "id_mun_residencia_paciente",
+    "nome_mun_residencia_paciente",
+    "ur_residencia_paciente",
+    "latitude_municipio_paciente",
+    "longitude_municipio_paciente",
+    "percentual_gasto_hospitalar_mun_paciente",
+    "populacao_mun_paciente",
+    "gasto_per_capita_mun_paciente",
+    "nivel_hierarquia_regic_mun_paciente",
+    "nome_nivel_hierarquia_mun_paciente",
+    "cnes_hospital",
+    "nome_fantasia_hospital",
+    "id_municipio_hospital",
+    "nome_municipio_hospital",
+    "uf_hospital",
+    "latitude_municipio_hospital",
+    "longitude_municipio_hospital",
+    "percentual_gasto_hospitalar_mun_hospital",
+    "populacao_mun_hospital",
+    "gasto_per_capita_mun_hospital",
+    "nivel_hierarquia_regic_mun_hospital",
+    "nome_nivel_hierarquia_mun_hospital",
+    "distancia_entre_municipios",
+    "houve_deslocamento"
+  )
+
+dados_pe_obstetricia_2021_csv %>%
+  readr::write_csv2("dados_pe_obstetricia_2021.csv")
+
 
 ####Prepara dados auxiliares para etl
 
