@@ -70,6 +70,8 @@ library(easyalluvial)
 
 dataset_analise <- readRDS("dataset_analise_2021.RDS")
 
+dataset_analise$munuf<- paste(dataset_analise$mun_res_nome.x,dataset_analise$uf.x,sep = "-")
+
 
 #Subsititui o valor do gasto percentual de Brasília pelo gasto percentual do DF
 #O gasto percentual do DF é calculado a partir de planilha montada com dados trazidoso do MEU SICONFI
@@ -246,7 +248,8 @@ busca_municipio_regic<- function(){
       municipios_seat %>%
         mutate(cod_cidade= code_muni)
       ) %>%
-    select(name_muni) %>%
+    select(name_muni,uf ) %>%
+    mutate(name_muni = paste(name_muni, uf, sep = "-")) %>%
     arrange(name_muni)
   
   sort(unique(municipios$name_muni))
@@ -262,6 +265,7 @@ plot_mapa_entrada_saida <- function (tipo_es, mun_es, somente_dados= FALSE){
   
   muni_sel<-
     municipios_seat %>%
+    mutate(name_muni = paste(name_muni,abbrev_state, sep = "-")) %>%
     filter(name_muni %in% mun_es) %>%
     inner_join(
       REGIC_trabalho %>%
@@ -340,7 +344,28 @@ plot_mapa_entrada_saida <- function (tipo_es, mun_es, somente_dados= FALSE){
 
 busca_todos_municipios<- function(){
   
-  sort(unique(dataset_analise$mun_res_nome.x))
+  .data<- municipios
+  
+  .data$munuf<- paste(.data$name_muni, .data$abbrev_state, sep = "-")
+  #sort(unique(dataset_analise$munuf))
+  sort(.data$munuf)
+}
+
+busca_codigo_municipio<- function(nome_uf_mun, seis_digitos = TRUE){
+  
+  municipios_sel<-
+  municipios %>%
+    mutate(uf_mun = paste(name_muni, abbrev_state, sep="-")) %>%
+    filter(uf_mun %in% nome_uf_mun) %>%
+    select(code_muni)
+  
+  
+  if(seis_digitos){
+    municipios_sel$code_muni<- substr(municipios_sel$code_muni,1,6)
+  }
+  
+  return(as.character(municipios_sel$code_muni))
+  
 }
 
 
@@ -414,7 +439,8 @@ renderPlot({
 
   muni_sel<-
   municipios_seat %>%
-    filter(name_muni %in% input$regic_mun) %>%
+    mutate(munuf = paste(name_muni,abbrev_state, sep = "-")) %>%
+    filter(munuf %in% input$regic_mun) %>%
     inner_join(
       pop_municipios%>%
         mutate(code_muni= as.numeric(id_municipio))
@@ -696,7 +722,7 @@ Inputs {.sidebar data-width=150}
 -------------------------------------
 
 ```{r}
-selectInput(inputId = "regic_mun_desloc", label= "Selecione um municipio", choices= busca_todos_municipios(),selected = "Recife", multiple = FALSE, selectize = TRUE )
+selectInput(inputId = "regic_mun_desloc", label= "Selecione um municipio", choices= busca_todos_municipios(),selected = "Recife-PE", multiple = FALSE, selectize = TRUE )
 
 sliderInput(inputId= "num_destaque", label = "Número de cidades em destaques", min=1, max = 5, value=1 )
 
@@ -766,7 +792,8 @@ Column {.tabset}
 renderPlot({
   
   codigo_muni<-
-    unique(dataset_analise$munic_res[dataset_analise$mun_res_nome.x %in% input$regic_mun_desloc])
+    busca_codigo_municipio(input$regic_mun_desloc)
+  
   
   print(codigo_muni)
 
@@ -935,8 +962,18 @@ renderPlot({
 ```{r}
 renderPlot({
   
+  # codigo_muni<-
+  #   unique(dataset_analise$codufmun[dataset_analise$mun_res_nome.y==input$regic_mun_desloc])
+  
+  # codigo_muni<-
+  #   unique(dataset_analise$munic_res[dataset_analise$munuf %in% input$regic_mun_desloc])
+  
+  
   codigo_muni<-
-    unique(dataset_analise$codufmun[dataset_analise$mun_res_nome.y==input$regic_mun_desloc])
+    busca_codigo_municipio(input$regic_mun_desloc)
+
+
+    
   
   print(codigo_muni)
   
@@ -1111,7 +1148,7 @@ Inputs {.sidebar data-width=150}
 ```{r}
 
 
-selectInput(inputId = "mun_gasto", label= "Selecione um ou mais municipios", choices= busca_todos_municipios(),selected = "Recife", multiple = TRUE, selectize = TRUE )
+selectInput(inputId = "mun_gasto", label= "Selecione um ou mais municipios", choices= busca_todos_municipios(),selected = "Recife-PE", multiple = TRUE, selectize = TRUE )
 
 
 ```
@@ -1130,8 +1167,16 @@ Column
 renderPlot({
   
 
-codigo_muni<-
-    unique(dataset_analise$munic_res[str_to_lower(dataset_analise$mun_res_nome.x) %in% str_to_lower(input$mun_gasto)])
+# codigo_muni<-
+#     unique(dataset_analise$munic_res[str_to_lower(dataset_analise$mun_res_nome.x) %in% str_to_lower(input$mun_gasto)])
+# 
+# codigo_muni<-
+#   unique(dataset_analise$munic_res[dataset_analise$munuf %in% input$mun_gasto])
+
+  codigo_muni<-
+    busca_codigo_municipio(input$mun_gasto)
+
+
 
 print(input$mun_gasto)
 print(codigo_muni)
@@ -1244,7 +1289,7 @@ Inputs {.sidebar data-width=150}
 -------------------------------------
 
 ```{r}
-selectInput(inputId = "regic_mun_gasto", label= "Selecione um ou mais municipios", choices= busca_municipio_regic(),selected = "Recife", multiple = TRUE, selectize = TRUE )
+selectInput(inputId = "regic_mun_gasto", label= "Selecione um ou mais municipios", choices= busca_municipio_regic(),selected = "Recife-PE", multiple = TRUE, selectize = TRUE )
 
 
 ```
@@ -1265,11 +1310,14 @@ renderPlot({
   
   
 
-codigo_muni<-
-  unique(dataset_analise$munic_res[str_to_lower(dataset_analise$mun_res_nome.x) %in%
-                                     str_to_lower(input$regic_mun_gasto)])
+# codigo_muni<-
+#   unique(dataset_analise$munic_res[str_to_lower(dataset_analise$mun_res_nome.x) %in%
+#                                      str_to_lower(input$regic_mun_gasto)])
 
   
+  codigo_muni<-
+    busca_codigo_municipio(input$regic_mun_gasto)
+
 
   muni_sel_saida<-
   dataset_analise %>%
@@ -1469,10 +1517,16 @@ Column
 
 renderDT({
   
+  codigo_muni<-
+    busca_codigo_municipio(input$regic_mun_vis)
+
+
+
+  
   selecao<-
     dataset_analise %>%
     filter(deslocamento == 1,
-           mun_res_nome.x == input$regic_mun_vis) %>% # antes havia esse filtro complementar: ,perc.x>=0,perc.x<=50
+           munic_res == codigo_muni) %>% # antes havia esse filtro complementar: ,perc.x>=0,perc.x<=50
     distinct(nome_nivel_hierarquia.x,munic_res, uf.x,perc.x, mun_res_nome.x) %>%
     inner_join(
       agrupamento_municipio_cluster %>%
@@ -1546,7 +1600,7 @@ renderDT({
 renderDT({
   
   codigo_muni<-
-    unique(dataset_analise$munic_res[dataset_analise$mun_res_nome.x %in% input$regic_mun_vis])
+    busca_codigo_municipio(input$regic_mun_vis)
   
   print(codigo_muni)
 
@@ -1631,12 +1685,17 @@ renderDT({
 
 renderDT({
   
-  if (NROW(unique(dataset_analise$codufmun[dataset_analise$mun_res_nome.y==input$regic_mun_vis])) == 0){
+  
+  codigo_muni<-
+    busca_codigo_municipio(input$regic_mun_vis)
+
+  
+  if (NROW(unique(dataset_analise$codufmun[dataset_analise$codufmun==codigo_muni])) == 0){
     return()
   }
   
-  codigo_muni<-
-    unique(dataset_analise$codufmun[dataset_analise$mun_res_nome.y==input$regic_mun_vis])
+  # codigo_muni<-
+  #   unique(dataset_analise$codufmun[dataset_analise$mun_res_nome.y==input$regic_mun_vis])
   
   print("codigo_muni")
   print(codigo_muni)
@@ -1752,12 +1811,13 @@ renderDataTable({
   str_info_metodologia$texto[12]<- "Escreva um texto jornalístico com linguagem de jornalismo local a partir das informações acima, bem como a partir das informações que caracterizam um município escolhido para ser analisado de forma mais específica. Na análise para os dados de município deve-se considerar os dados apresentados nas três seções de dados em formato csv que serão apresentados mais a frente. É importante frisar que os dados que mostram os números absolutos apresentados referem-se a uma amostra de 10% de todos os atendimentos registrados em 2021 no sistema de internação hospitalar (SIH) do Datasus."
   
   
-  mun_selecionado<-input$regic_mun_vis
+  codigo_muni<-
+    busca_codigo_municipio(input$regic_mun_vis)
   
   selecao<-
     dataset_analise %>%
     filter(deslocamento == 1,
-           mun_res_nome.x == mun_selecionado) %>% # antes havia esse filtro complementar: ,perc.x>=0,perc.x<=50
+           munic_res == codigo_muni) %>% # antes havia esse filtro complementar: ,perc.x>=0,perc.x<=50
     distinct(nome_nivel_hierarquia.x,munic_res, uf.x,perc.x, mun_res_nome.x) %>%
     inner_join(
       agrupamento_municipio_cluster %>%
@@ -1817,8 +1877,8 @@ renderDataTable({
     })
   
   
-  codigo_muni<-
-    unique(dataset_analise$munic_res[dataset_analise$mun_res_nome.x %in% mun_selecionado])
+  # codigo_muni<-
+  #   unique(dataset_analise$munic_res[dataset_analise$mun_res_nome.x %in% mun_selecionado])
   
   
   
@@ -1875,7 +1935,7 @@ renderDataTable({
     c("municipio_destino_paciente",
       "uf",
       "hierarquia_regic_municipio_destino",
-      paste("percentual_pacientes_deslocados_de_", mun_selecionado),
+      paste("percentual_pacientes_deslocados_de_", input$regic_mun_vis),
       "distancia_ao_municipio"
     )
   
@@ -1894,16 +1954,15 @@ renderDataTable({
   
   info_entrada<- TRUE
   
-  if (NROW(unique(dataset_analise$codufmun[dataset_analise$mun_res_nome.y==mun_selecionado])) == 0){
+
+  if (NROW(unique(dataset_analise$codufmun[dataset_analise$codufmun==codigo_muni])) == 0){
     
     info_entrada<- FALSE
     str_disclaimer <- tibble(texto= "O município não recebeu pacientes de fora")
     
   } else{
     
-    codigo_muni<-
-      unique(dataset_analise$codufmun[dataset_analise$mun_res_nome.y==mun_selecionado])
-    
+
     print("codigo_muni")
     print(codigo_muni)
     
@@ -1962,7 +2021,7 @@ renderDataTable({
       c("municipio_origem_paciente",
         "uf",
         "hierarquia_regic_municipio_origem",
-        paste("percentual_de_pacientes_deslocados_para_",mun_selecionado),
+        paste("percentual_de_pacientes_deslocados_para_",input$regic_mun_vis),
         "distancia_ao_municipio"
       )
     
